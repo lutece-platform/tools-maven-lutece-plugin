@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Exemple</title>
+<author>L'équipe Lutèce</author>
+</properties>
+<body>
+
+<section name="Exemple de surcharge du pom-parent"><p>La configuration d'un
+pom-parent peut être surchargée. On peut, par exemple, surcharger le
+paramétrage des rapports, les paramètres de connections vers l'outil de
+suivi de bug, et ceux vers l'outil d'intégration continue.</p>
+</section>
+
+</body>
+</document>

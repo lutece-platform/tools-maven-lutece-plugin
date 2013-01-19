@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <document>
+      <properties>
+          <title>
+              Maven Lutece plugin - Example
+          </title>
+      </properties>
+      <body>
+<section name="Example pom-parent override"><p>The pom-parent configuration
+might be overriding. For example, you can override : reports parameters, bug
+traker connections parameters or integration tools connections parameters.</p>
+</section>
+      </body>
+  </document>

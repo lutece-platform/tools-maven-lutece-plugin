@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<faqs id="FAQ" title="Frequently Asked Questions">
+	<part id="Environment">
+		<title>Environment</title>
+		<faq id="java5">
+			<question>
+				When building a Lutece core or plugin, I get a
+				<code>BUILD FAILURE</code> with the following message :
+				<code>
+					Failure executing javac, but could not parse the error:
+					javac: invalid target release: 1.5
+				</code>
+			</question>
+			<answer>
+				<p>
+				You need Java 5 to build Lutece. Make sure that Maven is invoked
+				with a Java 5 VM : your <code>JAVA_HOME</code> environment
+				variable should be set to the base directory of your Java 5 JRE
+				or SDK installation.
+				</p>
+			</answer>
+		</faq>
+	</part>
+	<part id="POM configuration">
+		<title>POM configuration</title>
+		<faq id="plugin_declaration">
+			<question>
+				When building a Lutece project, I get a <code>BUILD ERROR</code>
+				with the following message :
+				<code>
+					Cannot find lifecycle mapping for packaging: 'lutece-XXX'.
+				</code>
+			</question>
+			<answer>
+				<p>
+					Check that you have declared
+					<code>maven-lutece-plugin</code> in your project's POM
+					(the <code>pom.xml</code> file in the root directory). For
+					an example of how to do this, see the
+					<a href="usage.html">usage</a> page.
+				</p>
+			</answer>
+		</faq>
+	</part>
+</faqs>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <document>
+      <properties>
+          <title>
+              Maven Lutece plugin - Example
+          </title>
+      </properties>
+      <body>
+	  <section name="Simple example plugin"><p>A <tt>pom.xml</tt>
+, of simple plugin, looks like :</p>
+<source>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+ xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd&quot;&gt;
+
+&lt;parent&gt;
+  &lt;artifactId&gt;lutece-plugins-pom&lt;/artifactId&gt;
+  &lt;groupId&gt;fr.paris.lutece.tools&lt;/groupId&gt;
+  &lt;version&gt;0.7&lt;/version&gt;
+&lt;/parent&gt;
+
+&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+&lt;groupId&gt;fr.paris.lutece.plugins&lt;/groupId&gt;
+&lt;artifactId&gt;plugin-myluteceplugin&lt;/artifactId&gt;
+&lt;packaging&gt;lutece-plugin&lt;/packaging&gt;
+&lt;version&gt;2.0.0-SNAPSHOT&lt;/version&gt;
+&lt;name&gt;Lutece myluteceplugin plugin&lt;/name&gt;
+
+&lt;repositories&gt;
+  &lt;repository&gt;
+    &lt;id&gt;lutece&lt;/id&gt;
+    &lt;name&gt;luteceRepository&lt;/name&gt;
+    &lt;url&gt;http://dev.lutece.paris.fr/maven_repository&lt;/url&gt;
+    &lt;layout&gt;default&lt;/layout&gt;
+  &lt;/repository&gt;
+&lt;/repositories&gt;
+
+&lt;dependencies&gt;
+        &lt;dependency&gt;
+    &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+    &lt;artifactId&gt;lutece-core&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0b3&lt;/version&gt;
+    &lt;type&gt;lutece-core&lt;/type&gt;
+  &lt;/dependency&gt;
+&lt;/dependencies&gt;
+
+&lt;/project&gt;</source>
+<ul><li><p>notes :</p>
+</li>
+<li><p>The plugin <tt>pom.xml</tt>
+refere to a pom-parent, inherit of her configuration.</p>
+</li>
+<li><p>The <tt>repositories</tt>
+definition, can do also in <tt>settings.xml</tt>
+file, wich can be found on <tt>documents_and_settings/votreCompte/.m2/</tt>
+directory.</p>
+</li>
+<li><p>The only dependencies needs to test this plugin is the dependency on
+<tt>lutece-core</tt>
+.</p>
+</li>
+</ul>
+</section>	  	   
+	 </body>
+  </document>

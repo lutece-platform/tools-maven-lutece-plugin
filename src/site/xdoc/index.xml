@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <document>
+      <properties>
+          <title>
+              Maven Lutece plugin - Introduction
+          </title>
+      </properties>
+      <body>
+          <section name="Introduction">
+              <p>
+				This Maven 2 plugin handles the common tasks required to develop and package
+  <a href="http://lutece.paris.fr">Lutece</a> core and plugin components, and to assemble
+  a website from a set of Lutece artifacts.
+              </p>
+			  <subsection name="Goals Overview">
+             <ul>
+				<li><a href="clean-mojo.html">lutece:clean</a> : delete the build directory project.</li>
+				<li><a href="inplace-mojo.html">lutece:inplace</a> : explodes a test webapp for a
+    Lutece core project.</li>
+				<li><a href="exploded-mojo.html">lutece:exploded</a> : explodes a test webapp for a
+    Lutece plugin or site project.</li>
+				<li><a href="package-mojo.html">lutece:package</a> : packages a Lutece core or plugin
+    artifact.</li>
+				<li><a href="assembly-mojo.html">lutece:assembly</a> : builds binary zip file and source zip file
+   from a Lutece core or plugin.</li>
+				<li><a href="site-assembly-mojo.html">lutece:site-assembly</a> : builds a WAR file from a set
+    of Lutece artifacts.</li>
+			 </ul>
+			  </subsection>
+			  <subsection name="Usage">
+				<p>
+				Instructions on how to use the Lutece plugin for Maven 2 can be found <a href="usage.html">here</a>.
+				</p>
+			  </subsection>
+			 <subsection name="Examples">
+				<p>
+				To provide you with better understanding of some usages of the Lutece plugin
+  for Maven 2, you can take a look into the following examples:
+				</p>
+				<ul>
+					<li><a href="examples/simpleexample.html">Simple example</a></li>
+					<li><a href="examples/adddependencies.html">Adding dependencies</a></li>
+					<li><a href="examples/pomparentoveride.html">pom-parent override</a></li>
+				</ul>
+			  </subsection>
+          </section>
+		
+      </body>
+  </document>
+          

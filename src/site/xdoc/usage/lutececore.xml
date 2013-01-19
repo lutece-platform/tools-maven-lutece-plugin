@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <document>
+      <properties>
+          <title>
+              Maven Lutece plugin - Usage
+          </title>
+      </properties>
+      <body>
+         <section name="Working with the Lutece core"><subsection name="Project
+layout"><p>The Maven project for the Lutece core is quite similar to a regular
+WAR project (note that, for historical reasons, Lutece projects do not use the
+directory structure suggested by Maven 2. Webapp components are stored in
+<tt>webapp</tt>
+, and other sources in <tt>src</tt>
+):</p>
+<source>lutece-core
+ +- src
+ |  +- java
+ |  +- site
+ |  +- sql
+ |  +- conf
+ |     +- default
+ +- webapp</source>
+<p>The only specificities lie in the POM :</p>
+<ul><li><p>the project packaging is set to <tt>lutece-core</tt>
+:</p>
+<source>&lt;project&gt;
+        ...
+        &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+        &lt;artifactId&gt;lutece-core&lt;/artifactId&gt;
+        &lt;packaging&gt;lutece-core&lt;/packaging&gt;
+        &lt;version&gt;2.0.0&lt;/version&gt;</source>
+</li>
+<li><p><tt>maven-lutece-plugin</tt>
+is also declared in the <tt>build/plugins</tt>
+section (this is required for all Lutece projects):</p>
+<source>&lt;project&gt;
+        ...
+        &lt;build&gt;
+                ...
+                &lt;plugins&gt;
+                        &lt;plugin&gt;
+                                &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+                                &lt;artifactId&gt;maven-lutece-plugin&lt;/artifactId&gt;
+                                &lt;extensions&gt;true&lt;/extensions&gt;
+                        &lt;/plugin&gt;</source>
+</li>
+</ul>
+<p>You also probably noticed the <tt>src/conf/default</tt>
+directory. Lutece projects have a specific way of handling configuration
+files, which is described <a href="configuration.html">here</a>
+.</p>
+</subsection>
+<subsection name="Development and testing"><p>Like the WAR plugin, the Lutece
+plugin provides an in-place deployment goal:</p>
+<source>mvn lutece:inplace</source>
+<p>This will invoke the <a href="inplace-mojo.html">lutece:inplace</a>
+mojo, which assembles the webapp directly in the <tt>webapp</tt>
+source directory. You can configure a Tomcat context on this directory, to
+allow fast redeployment and testing.</p>
+</subsection>
+<subsection name="Packaging"><p>Packaging is invoked with the following
+command:</p>
+<source>mvn package</source>
+<p>Note : in Maven 2 terminology, <i>packaging</i>
+refers to the construction of Maven artifacts, in other words the binary
+components that will be stored in the Maven repository and reused by other
+Maven projects. This command does <i>not</i>
+generate a Lutece WAR.</p>
+<p>The <tt>package</tt>
+phase is bound to the <a href="package-mojo.html">lutece:package</a>
+mojo, which will generate two artifacts:</p>
+<ul><li><p>a JAR containing the core's classes ;</p>
+</li>
+<li><p>a ZIP containing the webapp components.</p>
+</li>
+</ul>
+</subsection>
+<subsection name="Generate Lutece core
+distribution"><source>mvn lutece:assembly</source>
+<p>This goal will generate two artifacts :</p>
+<ul><li><p>a ZIP containing core's sources</p>
+</li>
+<li><p>a ZIP containing :</p>
+<ul><li><p>a WAR file, made with core webapp, ready to be deployed and could
+be a base to embed Lutece plugins, which should be activate in the
+administration control panel.</p>
+</li>
+<li><p>database initialisation files</p>
+</li>
+</ul>
+<p>Note : Case of webapp wich will embed many lugins, it's advised to carry
+out a Lutèce site. </p>
+</li>
+</ul>
+</subsection>
+</section>
+		
+      </body>
+  </document>
+          

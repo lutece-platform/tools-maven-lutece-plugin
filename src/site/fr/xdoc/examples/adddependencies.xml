@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Exemple</title>
+<author>L'équipe Lutèce</author>
+</properties>
+<body>
+
+<section name="Exemple d'ajout de dépendances"><p>Lors du développement d'un
+plugin il est possible que l'on est besoin soit d'un autre plugin, soit d'une
+API spécifique. Il faut alors rajouter les dépendances, des plugins et des
+APIs, dans le fichier <tt>pom.xml</tt>
+de notre plugin.</p>
+<ul><li><p>exemple concret :</p>
+<p>Imaginons que notre plugin est besoin du plugin document pour fonctionner.
+Il faut alors rajouter la dépendance suivante dans notre fichier
+<tt>pom.xml</tt>
+:</p>
+<source>...
+
+&lt;dependencies&gt;
+
+        ...
+  
+  &lt;dependency&gt;
+    &lt;groupId&gt;fr.paris.lutece.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;plugin-document&lt;/artifactId&gt;
+    &lt;version&gt;1.9.0&lt;/version&gt;
+    &lt;type&gt;lutece-plugin&lt;/type&gt;
+  &lt;/dependency&gt;
+  
+  ...
+  
+&lt;/dependencies&gt;
+
+...</source>
+</li>
+</ul>
+</section>
+
+</body>
+</document>

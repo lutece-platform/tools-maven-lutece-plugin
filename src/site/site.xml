@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<project name="Maven Lutece plugin">
+	<publishDate format="dd MMMM yyyy" position="left" />
+	<version />
+	<body>
+		<links>			
+			<item name="Maven 2" href="http://maven.apache.org/maven2/"/>
+			<item name="FR" href="/fr/index.html"/>
+		</links>
+
+		<menu name="Overview">
+			<item name="Introduction" href="index.html"/>
+			<item name="Configuration files" href="configuration.html"/>
+			<item name="Usage" href="usage.html" collapse="true">
+				<item name="Lutece core" href="usage/lutececore.html"/>
+				<item name="Lutece plugin" href="usage/luteceplugins.html"/>
+				<item name="Lutece site" href="usage/lutecesites.html"/>
+				<item name="Lutece multi project" href="usage/lutecemultiproject.html"/>
+			</item>
+			<item name="FAQ" href="faq.html"/>
+		</menu>
+
+		<menu name="Examples">
+			<item name="Simple example " href="examples/simpleexample.html"/>
+			<item name="Adding dependencies " href="examples/adddependencies.html"/>
+			<item name="pom-parent override " href="examples/pomparentoveride.html"/>
+		</menu>
+
+		<menu name="IDE integration">
+			<item name="NetBeans" href="http://dev.lutece.paris.fr/wikilutece/index.php?title=NetBeans_environment_to_develop_Lutece_project"/>
+			<item name="Eclipse" href="http://dev.lutece.paris.fr/wikilutece/index.php?title=Eclipse_environment_to_develop_Lutece_project"/>
+		</menu>
+
+		${reports}
+	</body>
+</project>

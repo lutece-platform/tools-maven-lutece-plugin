@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Fichiers de configuration</title>
+</properties>
+<body>
+
+<section name="Fichiers de configuration"><subsection name="Configuration par
+défaut ou configuration locale"><p>Durant le développement d'un projet
+Lutèce, vous serez amené à manipuler deux types de fichiers de
+configuration :</p>
+<ul><li><p>les fichiers de configuration par défaut : ce sont des fichiers
+d'exemple, qui seront intégrés dans les artefacts Lutèce. Ils ne doivent
+contenir aucune valeur spécifique à votre environnement.</p>
+<p>L'accès par défaut à ces fichiers est <tt>src/conf/default</tt>
+.</p>
+</li>
+<li><p>les fichiers de configuration locale : ces fichiers sont utilisés pour
+votre application web de test, ils contiennent les valeurs spécifiques à
+votre environnement de développement. Ces fichiers ne doivent pas être
+utilisés en dehors de votre environnement, et ne sont donc pas inclus dans
+les artefacts Lutèce.</p>
+<p>L'accès par défaut à ces fichiers est
+<tt>${user.home}/lutece/conf/${project.artifactId}</tt>
+.</p>
+<p><i>Astuce</i>
+- Si vous n'êtes pas sûr de localiser ce répertoire, le chemin absolu est
+affiché quand vous lancez Maven :</p>
+<source>[INFO] Local configuration directory is D:\Documents and Settings\YOUR_NAME\lutece\conf\plugin-links</source>
+</li>
+</ul>
+</subsection>
+<subsection name="Structure des répertoires"><p>Les deux répertoires doivent
+avoir une structure similaire à celle de l'application web.</p>
+<p>Par exemple, <tt>src/conf/default/WEB-INF/conf/db.properties</tt>
+sera copié dans le répertoire de l'application web <tt>WEB-INF/conf</tt>
+.</p>
+</subsection>
+<subsection name="Précisions"><p>Comme indiqué précédemment, les fichiers
+de configuration ne sont pas utilisés de la même manière entre le mode
+development et le packaging. Les tableaux suivants décrivent, pour chaques
+types de projet, quand et comment chaque configuration est utilisée :</p>
+<ul><li><p><tt>lutece-core</tt>
+:</p>
+<table>
+	<tr>
+		<th><b>Goal</b></th>
+		<th><b>Défault configuration</b></th>
+		<th><b>Local configuration</b></th>
+	</tr>
+	<tr>
+		<td><a href="inplace-mojo.html">lutece:inplace</a></td>
+		<td>Copié vers la webapp de test</td>
+		<td>Copié vers la webapp de test</td>
+	</tr>
+	<tr>
+		<td><a href="package-mojo.html">package</a></td>
+		<td>Inclu dans l'artefact</td>
+		<td>Ignoré</td>
+	</tr>
+</table>
+</li>
+<li><p><tt>lutece-plugin</tt>
+:</p>
+<table>
+	<tr>
+		<th><b>Goal</b></th>
+		<th><b>Configuration par défault</b></th>
+		<th><b>Configuration locale</b></th>
+	</tr>
+	<tr>
+		<td><a href="exploded-mojo.html">lutece:exploded</a></td>
+		<td>Copié vers la webapp de test</td>
+		<td>Copié vers la webapp de test</td>
+	</tr>
+	<tr>
+		<td><a href="package-mojo.html">package</a></td>
+		<td>Inclu dans l'artefact</td>
+		<td>Ignoré</td>
+	</tr>
+</table>
+</li>
+<li><p><tt>lutece-site</tt>
+: Un projet de site est destiné à un site de production spécifique. Par
+conséquent, les fichiers de configuration ne sont pas génériques et, en
+tant que tel, sont placés directement dans le répertoire <tt>webapp</tt>
+; Il n'y a pas de répertoire <tt>src/conf/default</tt>
+.</p>
+<p>Le méchanisme de configuration locale est conservé pour tester le site
+sur une machine locale.</p>
+<table>
+	<tr>
+		<th><b>Goal</b></th>
+		<th><b>Configuration par défault</b></th>
+		<th><b>Configuration locale</b></th>
+	</tr>
+	<tr>
+		<td><a href="exploded-mojo.html">lutece:exploded</a></td>
+		<td>Non applicable</td>
+		<td>Copié vers la webapp de test</td>
+	</tr>
+	<tr>
+		<td><a href="packageSite-mojo.html">package</a></td>
+		<td>Non applicable</td>
+		<td>Ignoré</td>
+	</tr>
+</table>
+</li>
+</ul>
+<p>Note : A chaques fois que les deux configurations sont copiées, la
+configuration par défaut est copiée en premier puis est recouverte par la
+configuration locale, par conséquent, les fichiers locaux ont la
+priorité.</p>
+</subsection>
+</section>
+
+</body>
+</document>

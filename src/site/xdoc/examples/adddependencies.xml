@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <document>
+      <properties>
+          <title>
+              Maven Lutece plugin - Example
+          </title>
+      </properties>
+      <body>
+<section name="adding dependencies example"><p>During plugin development time,
+it's possible that you need dependencies to another plugin or a spécific API.
+It's necessary to add dependencies, plugins et APIs, in <tt>pom.xml</tt>
+file plugin.</p>
+<ul><li><p>case in point :</p>
+<p>Consider plugin need the Document plugin to work. It's necessary to add
+dependency following in <tt>pom.xml</tt>
+file :</p>
+<source>...
+
+&lt;dependencies&gt;
+
+        ...
+  
+  &lt;dependency&gt;
+    &lt;groupId&gt;fr.paris.lutece.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;plugin-document&lt;/artifactId&gt;
+    &lt;version&gt;1.9.0&lt;/version&gt;
+    &lt;type&gt;lutece-plugin&lt;/type&gt;
+  &lt;/dependency&gt;
+  
+  ...
+  
+&lt;/dependencies&gt;
+
+...</source>
+</li>
+</ul>
+</section>
+	 </body>
+  </document>

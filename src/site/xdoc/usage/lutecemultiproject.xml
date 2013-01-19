@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <document>
+      <properties>
+          <title>
+              Maven Lutece plugin - Usage
+          </title>
+      </properties>
+      <body>
+	  
+	  <section name="Working with the Lutece multi
+project"><subsection name="Project layout"><p>The multi project Maven Lutece
+layout it presents in the following way :</p>
+<source>lutece-multi-projet
+ +- core
+ |  +- src
+ |  +- webapp
+ |  +- pom.xml
+ +- plugins
+ |  +- module-xxx
+ |  |  +- src
+ |  |  +- webapp
+ |  |  +- pom.xml
+ |  +- module-xxx
+ |  +- plugin-xxx
+ |  |  +- src
+ |  |  +- webapp
+ |  |  +- pom.xml
+ |  +- plugin-xxx
+ |  +- ...
+ |	+- pom.xml
+ +- pom.xml</source>
+<p>The only specificities lie in the POM :</p>
+<ul><li><p>the project packaging is set to <tt>pom</tt>
+:</p>
+<source>&lt;project&gt;
+        ...
+        &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+        &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+        &lt;artifactId&gt;lutece-parent-pom&lt;/artifactId&gt;
+        &lt;name&gt;Lutece default Project&lt;/name&gt;
+		&lt;url&gt;http://dev.lutece.paris.fr/&lt;/url&gt;
+		&lt;packaging&gt;pom&lt;/packaging&gt;
+		&lt;version&gt;2.9-SNAPSHOT&lt;/version&gt;</source>
+		
+</li>
+</ul>
+<ul><li><p>The modules of multi-project are declared in the section
+<tt>modules</tt>
+, in the following way :</p>
+<source>&lt;project&gt;
+        ...
+		&lt;profiles&gt;
+		...
+		&lt;profile&gt;
+		    &lt;id&gt;multi-project&lt;/id&gt;
+	        &lt;modules&gt;
+	                &lt;module&gt;core&lt;/module&gt;
+	                &lt;module&gt;plugins/plugin-formengine&lt;/module&gt;
+	                &lt;module&gt;plugins/module-formengine-etatcivil&lt;/module&gt;
+	                &lt;module&gt;plugins/plugin-document&lt;/module&gt;
+	                &lt;module&gt;plugins/plugin-library&lt;/module&gt;
+	                ...
+	        &lt;/modules&gt;
+		&lt;/profile&gt;
+		...
+		&lt;/profiles&gt;</source>
+</li>
+</ul>
+</subsection>
+<subsection name="Development and testing"><p>Like the Lutece plugins, the
+Lutece multi-project provides an exploded deployment goal :</p>
+<source>mvn lutece:exploded -P multi-project</source>
+<p>This will:</p>
+<ul><li><p>retrieve the <tt>lutece-core</tt>
+artifact from the Maven repository;</p>
+</li>
+<li><p>install an exploded version of the core in <tt>target/lutece</tt>
+of multi-project;</p>
+</li>
+<li><p>install an exploded version of all plugins in <tt>target/lutece</tt>
+of multi-project;</p>
+</li>
+<li><p>copy any specified configuration files (see
+<a href="configuration.html">this page</a>
+).</p>
+</li>
+</ul>
+<p>In the end, <tt>target/lutece</tt>
+contains a Lutece instance with the core and all plugins installed. You can
+configure a Tomcat context on this directory to begin testing.</p>
+<p>To provide to erase and to redeploy a multi-project in only one maven
+commands, Contrary to a classic project we can't use the enchainement of
+following maven command:</p>
+<source>mvn clean lutece:exploded -P multi-project</source>
+<p>Because this enchainement, deploy all modules and finish to erase the
+directory <tt>target</tt>
+of multi-project. We use the enchainement of following maven command:</p>
+<source>mvn lutece:clean lutece:exploded -P multi-project</source>
+<p>To avoid recompiling and redeploying all the modules of multi-project, we
+have the possibility of making it only on a single module. For that purpose,
+to place it directly in the directory of the module at the level of its
+pom.xml and to throwlaunch the following maven command:</p>
+<source>mvn Lutece:exploded -DtestWebappDirectory=&quot;../../target/lutece&quot;</source>
+<p>for plugins.</p>
+<source>mvn Lutece:exploded -DtestWebappDirectory=&quot;../target/lutece&quot;</source>
+<p>for core.</p>
+</subsection>
+</section>
+	  
+	  </body>
+  </document>

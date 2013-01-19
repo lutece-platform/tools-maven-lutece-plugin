@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Usage</title>
+</properties>
+<body>
+
+<section name="Usage">
+	<p>
+		Il y a quatre types de projet Lutèce :
+	</p>
+	<ul>
+		<li>Le <a href="usage/lutececore.html">coeur de Lutèce</a> ;</li>
+		<li>Les <a href="usage/luteceplugins.html">plugins Lutèce</a> ;</li>
+		<li>Les <a href="usage/lutecesites.html">sites Lutèce</a> ;</li>
+		<li>Le <a href="usage/lutecemultiproject.html">multi projet lutece</a> ;</li>
+	</ul>
+</section>
+
+</body>
+</document>

@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Introduction</title>
+<author>L'équipe Lutèce</author>
+</properties>
+<body>
+
+<section name="Introduction"><p>Ce plugin Maven 2 permet d'encadrer les
+tâches de développement et de distribution de
+<a href="http://fr.lutece.paris.fr">Lutèce</a>
+et de ses plugins. Il permet de plus de préparer des sites web en
+&quot;assemblant&quot; une version du noyau Lutèce et un certain nombre de
+plugins.</p>
+<subsection name="Aperçu des
+goals"><ul><li><p><a href="clean-mojo.html">lutece:clean</a>
+: supprime le répertoire de build du projet.</p>
+</li>
+<li><p><a href="inplace-mojo.html">lutece:inplace</a>
+: prépare une webapp de test à  partir d'un projet &quot;Lutece core&quot;
+(développement sur le noyau).</p>
+</li>
+<li><p><a href="exploded-mojo.html">lutece:exploded</a>
+: prépare une webapp de test pour un projet de plugin ou de site Lutèce.</p>
+</li>
+<li><p><a href="package-mojo.html">lutece:package</a>
+: package un artifact &quot;Lutece core&quot; ou &quot;Lutece
+plugin&quot;.</p>
+</li>
+<li><p><a href="assembly-mojo.html">lutece:assembly</a>
+: génère les distributions sources et binaires pour un projet &quot;Lutece
+core&quot; ou &quot;Lutece plugin&quot;.</p>
+</li>
+<li><p><a href="site-assembly-mojo.html">lutece:site-assembly</a>
+: génère la distribution binaire pour un projet de site Lutèce.</p>
+</li>
+</ul>
+</subsection>
+<subsection name="Utilisation"><p>Les instructions d'utilisation du plugin
+Lutece pour Maven 2 peuvent être trouvées sur <a href="usage.html">cette
+page</a>
+.</p>
+</subsection>
+<subsection name="Exemples"><p>Pour une meilleure compréhension de
+l'utilisation du plugin Lutece pour Maven, vous pouvez consulter les deux
+exemples suivants:</p>
+<ul><li><p><a href="examples/simpleexample.html">exemple simple</a>
+</p>
+</li>
+<li><p><a href="examples/adddependencies.html">ajouter des dépendances</a>
+</p>
+</li>
+<li><p><a href="examples/pomparentoveride.html">surcharger le pom-parent</a>
+</p>
+</li>
+</ul>
+</subsection>
+</section>
+
+</body>
+</document>

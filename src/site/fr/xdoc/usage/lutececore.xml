@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Usage</title>
+<author>The Lutece team</author>
+</properties>
+<body>
+
+<section name="Travailler avec le coeur"><subsection name="Structure du
+projet"><p>La structure du projet Maven pour le coeur de Lutèce est similaire
+à un projet WAR régulier (il faut noter que, pour des raisons historiques,
+les projets Lutèce n'utilisent pas la structure proposée par Maven 2. Les
+composants de l'application web sont placés dans <tt>webapp</tt>
+, et les autres sources dans <tt>src</tt>
+):</p>
+<source>lutece-core
+ +- src
+ |  +- java
+ |  +- site
+ |  +- sql
+ |  +- conf
+ |     +- default
+ +- webapp</source>
+<p>Les spécifications se trouvent dans le fichier POM :</p>
+<ul><li><p>Le packaging du projet est paramétré par <tt>lutece-core</tt>
+:</p>
+<source>&lt;project&gt;
+        ...
+        &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+        &lt;artifactId&gt;lutece-core&lt;/artifactId&gt;
+        &lt;packaging&gt;lutece-core&lt;/packaging&gt;
+        &lt;version&gt;2.0.0&lt;/version&gt;</source>
+</li>
+<li><p><tt>maven-lutece-plugin</tt>
+est aussi déclaré dans la section <tt>build/plugins</tt>
+(requis pour tous les projets Lutèce):</p>
+<source>&lt;project&gt;
+        ...
+        &lt;build&gt;
+                ...
+                &lt;plugins&gt;
+                        &lt;plugin&gt;
+                                &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+                                &lt;artifactId&gt;maven-lutece-plugin&lt;/artifactId&gt;
+                                &lt;extensions&gt;true&lt;/extensions&gt;
+                        &lt;/plugin&gt;</source>
+</li>
+</ul>
+<p>Vous avez probablement remarqué le répertoire <tt>src/conf/default</tt>
+. Les projets Lutèce disposent d'une procédure spécifique, pour gérer les
+fichiers de configuration, qui est décrite
+<a href="configuration.html">ici</a>
+.</p>
+</subsection>
+<subsection name="Developpement et tests"><p>Comme le plugin WAR, le plugin
+Lutèce fournit un goal de déploiement local :</p>
+<source>mvn lutece:inplace</source>
+<p>Cela a pour effet d'invoquer le mojo
+<a href="inplace-mojo.html">lutece:inplace</a>
+, qui assemble l'application web directement dans le répertoire source
+<tt>webapp</tt>
+. Vous pouvez configurer le context de Tomcat sur ce répertoire, pour
+permettre d'effectuer rapidement des redéploiements et des tests.</p>
+</subsection>
+<subsection name="Packaging"><p>Le packaging est invoqué par la commande
+suivante:</p>
+<source>mvn package</source>
+<p>Note : dans la nomenclature Maven 2, <i>packaging</i>
+fait référence à la construction d'artefacts Maven, i.e. les composants
+binaires qui sont stockés sur le repository Maven et réutilisés par les
+autres projets Maven. Cette commande <i>ne génère pas</i>
+de WAR Lutèce.</p>
+<p>La phase <tt>package</tt>
+est liée au mojo <a href="package-mojo.html">lutece:package</a>
+, qui va générer deux artefacts :</p>
+<ul><li><p>un JAR contenant les classes du coeur;</p>
+</li>
+<li><p>un ZIP contenant les composants de l'application web.</p>
+</li>
+</ul>
+</subsection>
+<subsection name="Génération d'une distribution du
+coeur"><source>mvn lutece:assembly</source>
+<p>Cette commande va générer deux archives :</p>
+<ul><li><p>un ZIP contenant les sources du coeur</p>
+</li>
+<li><p>un ZIP contenant :</p>
+<ul><li><p>un fichier WAR, d'une webapp du coeur, minimale, prête à être
+déployée et pouvant servir de base au déploiement de plugins (qui devront
+être activés dans l'interface d'administration).</p>
+</li>
+<li><p>les fichiers d'initialisation de la base de donnée</p>
+</li>
+</ul>
+<p>Note : Dans le cas d'une webapp destinée à exploiter plusieurs plugins,
+il est conseillé de réaliser un site Lutèce. </p>
+</li>
+</ul>
+</subsection>
+</section>
+
+</body>
+</document>

@@ -1,0 +1,169 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<parent>
+		<artifactId>lutece-global-pom</artifactId>
+		<groupId>fr.paris.lutece.tools</groupId>
+		<version>2.2</version>
+	</parent>
+
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>fr.paris.lutece.tools</groupId>
+	<artifactId>maven-lutece-plugin</artifactId>
+	<packaging>maven-plugin</packaging>
+        <version>3.0.2-SNAPSHOT</version>
+	<name>Lutece Plugin for Maven 3</name>
+	<description>
+		A Maven plugin which handles the common tasks to develop and
+		package the Lutece core and Lutece plugins, and to assemble a
+		web site from a set of Lutece artifacts.
+	</description>
+	<inceptionYear>2006</inceptionYear>
+	<organization>
+		<name>Mairie de Paris</name>
+		<url>http://lutece.paris.fr</url>
+	</organization>
+	<url>http://dev.lutece.paris.fr/plugins/${project.artifactId}/</url>
+
+	<repositories>
+		<repository>
+			<id>lutece</id>
+			<name>luteceRepository</name>
+			<url>http://dev.lutece.paris.fr/maven_repository</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-plugin-api</artifactId>
+			<version>3.0.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-project</artifactId>
+			<version>2.2.1</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.maven</groupId>
+		    <artifactId>maven-compat</artifactId>
+		    <version>3.0.4</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.maven</groupId>
+		    <artifactId>maven-artifact</artifactId>
+		    <version>3.0.4</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.maven</groupId>
+		    <artifactId>maven-embedder</artifactId>
+		    <version>3.0.4</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.codehaus.plexus</groupId>
+		    <artifactId>plexus-archiver</artifactId>
+		    <version>2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-archiver</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.shared</groupId>
+			<artifactId>file-management</artifactId>
+			<version>1.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-clean-plugin</artifactId>
+			<version>2.4.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.plexus</groupId>
+			<artifactId>plexus-utils</artifactId>
+			<version>3.0.8</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>1.4</version>
+        </dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<!--
+				This is a workaround for a bug in maven-plugin-plugin : if we
+				declare this plugin in the <reporting> section, it overwrites
+				the index.html file.
+				To prevent this, the generation of the plugin documentation is
+				bound to the pre-site phase.
+				This problem should be solved in maven 2.0.5.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-plugin-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>generate-xdocs</id>
+						<phase>pre-site</phase>
+						<goals>
+							<goal>xdoc</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-component-metadata</artifactId>
+        <version>1.0-beta-3.0.5</version>
+        <executions>
+          <execution>
+            <id>process-classes</id>
+            <goals>
+              <goal>generate-metadata</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>process-test-classes</id>
+            <goals>
+              <goal>generate-test-metadata</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+		</plugins>
+	</build>
+	<scm>
+		<connection>scm:svn:http://dev.lutece.paris.fr/svn/lutece/tools/maven-lutece-plugin/trunk</connection>
+		<developerConnection>scm:svn:https://dev.lutece.paris.fr/svn/lutece/tools/maven-lutece-plugin/trunk</developerConnection>
+		<url>http://dev.lutece.paris.fr/svn/lutece/tools/maven-lutece-plugin/trunk</url>
+	</scm>
+
+	<distributionManagement>
+		<site>
+			<id>ssh-repository</id>
+			<url>
+				scp://${serverUrl}/opt/lutece/site/plugins/${project.artifactId}
+			</url>
+		</site>
+	</distributionManagement>
+
+	<properties>
+		<jiraProjectName>TOOLS</jiraProjectName>
+		<jiraComponentId>10021</jiraComponentId>
+	</properties>
+	
+</project>

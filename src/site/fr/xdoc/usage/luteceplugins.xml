@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Usage</title>
+<author>The Lutece team</author>
+</properties>
+<body>
+
+<section name="Travailler avec les plugins"><subsection name="Structure du
+projet"><p>Comme pour le coeur, les plugins Lutèce déclarent un packaging
+spécique dans le fichier POM:</p>
+<source>&lt;project&gt;
+        ...
+        &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+        &lt;artifactId&gt;lutece-foobar-plugin&lt;/artifactId&gt;
+        &lt;packaging&gt;lutece-plugin&lt;/packaging&gt;
+        &lt;version&gt;1.0&lt;/version&gt;</source>
+<p>Un plugin Lutèce possède une dépendance sur un artefact
+<tt>lutece-core</tt>
+:</p>
+<source>&lt;project&gt;
+        ...
+        &lt;dependencies&gt;
+                ...
+                &lt;dependency&gt;
+                        &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+                        &lt;artifactId&gt;lutece-core&lt;/artifactId&gt;
+                        &lt;version&gt;2.0.0&lt;/version&gt;
+                        &lt;type&gt;lutece-core&lt;/type&gt;
+                &lt;/dependency&gt;</source>
+<p>La structure des répertoires est similaire à celle du coeur, mais
+contient uniquement des éléments spécifiques au plugin :</p>
+<ul><li><p><tt>src/java</tt>
+: les classes Java spécifiques au plugin;</p>
+</li>
+<li><p><tt>src/conf/default</tt>
+: les fichiers de configuration spécifiques au plugin (version par
+defaut);</p>
+</li>
+<li><p><tt>webapp</tt>
+: Les composants de l'application web spécifiques au plugin.</p>
+</li>
+</ul>
+</subsection>
+<subsection name="Developpement et tests"><p>pour tester votre plugin, appelez
+le goal <a href="exploded-mojo.html">lutece:exploded</a>
+</p>
+<source>mvn lutece:exploded</source>
+<p>Cela va:</p>
+<ul><li><p>récupérer l'artefact <tt>lutece-core</tt>
+du repository Maven;</p>
+</li>
+<li><p>installer et préparer la version du coeur dans <tt>target/lutece</tt>
+;</p>
+</li>
+<li><p>copier les composants spécifiques au plugin vers ce répertoire
+préparé;</p>
+</li>
+<li><p>copier tous les fichiers de configuration spécifiés (voir
+<a href="configuration.html">cette page</a>
+).</p>
+</li>
+</ul>
+<p>Suite à ce processus, <tt>target/lutece</tt>
+contient une instance de Lutèce avec votre plugin installé. Vous pouvez
+configurer le context de Tomcat sur ce répertoire pour commencer à
+tester.</p>
+</subsection>
+<subsection name="Packaging"><source>mvn lutece:package</source>
+<p>Note : Cette commande est équivalente à <tt>mvn package</tt>
+</p>
+<p>Le packaging est le même que celui pour le coeur. <tt>mvn package</tt>
+va générer :</p>
+<ul><li><p>un JAR contenant les classes spécifiques au plugin;</p>
+</li>
+<li><p>un ZIP contenant les composants de l'application web, spécifiques au
+plugin.</p>
+</li>
+</ul>
+</subsection>
+<subsection name="Génération d'un distribution du
+plugin"><source>mvn lutece:assembly</source>
+<p>Cette commande va générer deux archives :</p>
+<ul><li><p>un ZIP contenant les sources du plugin</p>
+</li>
+<li><p>un ZIP contenant une version binaire du plugin pouvant être collée
+sur une webapp existante (le plugin devra être activé dans l'interface
+d'administration)</p>
+</li>
+</ul>
+</subsection>
+</section>
+
+</body>
+</document>

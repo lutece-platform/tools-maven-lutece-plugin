@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" ?>
+<document>
+<properties>
+<title>Maven Lutece plugin - Usage</title>
+<author>The Lutece team</author>
+</properties>
+<body>
+
+<section name="Travailler avec les sites"><subsection name="Structure du
+projet"><p>Le packaging spécifique pour les sites Lutèce est
+<tt>lutece-site</tt>
+:</p>
+<source>&lt;project&gt;
+        ...
+        &lt;groupId&gt;com.mycompany&lt;/groupId&gt;
+        &lt;artifactId&gt;myLuteceSite&lt;/artifactId&gt;
+        &lt;packaging&gt;lutece-site&lt;/packaging&gt;
+        &lt;version&gt;1.0&lt;/version&gt;</source>
+<p>Pour créer un site Lutèce, vous avez besoin d'un coeur de Lutèce et
+(optionnellement) d'un lot de plugins ; ils sont exprimés sous la forme de
+dépendances Maven :</p>
+<source>&lt;project&gt;
+        ...
+        &lt;dependencies&gt;
+                ...
+                &lt;dependency&gt;
+                        &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+                        &lt;artifactId&gt;lutece-core&lt;/artifactId&gt;
+                        &lt;version&gt;2.0.0&lt;/version&gt;
+                        &lt;type&gt;lutece-core&lt;/type&gt;
+                &lt;/dependency&gt;
+                &lt;dependency&gt;
+                        &lt;groupId&gt;fr.paris.lutece&lt;/groupId&gt;
+                        &lt;artifactId&gt;lutece-foobar-plugin&lt;/artifactId&gt;
+                        &lt;version&gt;1.0&lt;/version&gt;
+                        &lt;type&gt;lutece-plugin&lt;/type&gt;
+                &lt;/dependency&gt;</source>
+<p>Depuis qu'aucun développement java n'est requis pour assembler un site, le
+projet contient uniquement un répertoire source <tt>webapp</tt>
+, avec tous les fichiers spécifiques pour votre site : fichiers de
+configuration, skins, downloads, etc.</p>
+</subsection>
+<subsection name="Tests"><p>Comme pour les plugins Lutèce, vous pouvez lancer
+le goal <a href="exploded-mojo.html">lutece:exploded</a>
+pour assembler et préparer l'application web dans le répertoire
+<tt>target/lutece</tt>
+:</p>
+<source>mvn lutece:exploded</source>
+<p>Les fichiers copiés vers ce répertoire sont, dans cet ordre :</p>
+<ul><li><p>les fichiers provenants de l'artefact <tt>lutece-core</tt>
+;</p>
+</li>
+<li><p>les fichiers provenants des artefacts <tt>lutece-plugin</tt>
+;</p>
+</li>
+<li><p>les fichiers provenants du répertoire <tt>webapp</tt>
+du projet;</p>
+</li>
+<li><p>votre configuration locale, si disponible (voir
+<a href="configuration.html">cette page</a>
+).</p>
+</li>
+</ul>
+</subsection>
+<subsection name="Génération d'une distribution du site"><p>Quand vous êtes
+satisfait de votre application web de test, vous pouvez générer le fichier
+WAR avec la phase <tt>site-assembly</tt>
+. Il est recommandé de lancer <tt>clean</tt>
+avant, pour être sûr que le WAR ne contient pas de fichier spécifique au
+développement:</p>
+<source>mvn clean lutece:site-assembly</source>
+<p>Pour les sites, cette phase est liée au mojo
+<a href="site-assembly-mojo.html">lutece:site-assembly</a>
+, qui va générer l'archive web dans le répertoire <tt>target</tt>
+.</p>
+</subsection>
+</section>
+
+</body>
+</document>

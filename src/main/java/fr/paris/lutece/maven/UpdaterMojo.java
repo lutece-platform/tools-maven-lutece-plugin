@@ -1,3 +1,36 @@
+/*
+ * Copyright (c) 2002-2013, Mairie de Paris
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice
+ *     and the following disclaimer.
+ *
+ *  2. Redistributions in binary form must reproduce the above copyright notice
+ *     and the following disclaimer in the documentation and/or other materials
+ *     provided with the distribution.
+ *
+ *  3. Neither the name of 'Mairie de Paris' nor 'Lutece' nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * License 1.0
+ */
 package fr.paris.lutece.maven;
 
 import org.apache.maven.artifact.Artifact;
@@ -21,24 +54,29 @@ import java.util.Set;
 /**
  * Assembly zips for Lutece core or plugin project.<br/> If you wish to force
  * webapp re-creation (for instance, if you changed the version of a
- * dependency), call the <code>clean</code> phase before this goal.
+ * dependency), call the
+ * <code>clean</code> phase before this goal.
  *
  * @goal updater
  * @execute phase="process-classes"
  * @requiresDependencyResolution compile
  */
-public class UpdaterMojo
-    extends AbstractLuteceWebappMojo
+public class UpdaterMojo extends AbstractLuteceWebappMojo
 {
-    private static final String MINIMAL_VERSION = "0.0.0";
+
+    /**
+     * The upgrade from version.
+     *
+     * @parameter expression="${versionFrom}" default-value="0.0.0"
+     */
+    protected String strDefinedFromVersion;
+
     private static final String WEB_INF_LIB_PATH = "webapp/WEB-INF/lib/";
     private static final String SQL_FOLDER_PATH = "sql/";
     protected static final String EXCLUDE_PATTERN_SRC = "**/src/**";
     protected static final String EXCLUDE_PATTERN_SETTINGS = "**/.settings/**";
-
     // The path to the classes directory
     private static final String WEB_INF_CLASSES_PATH = "webapp/WEB-INF/classes/";
-
     /**
      * The directory containing the default configuration files.
      *
@@ -49,23 +87,26 @@ public class UpdaterMojo
     private static final String JUNIT = "junit";
     private static final String SERVELT_API = "servlet-api";
     protected static final String[] ASSEMBLY_WEBAPP_EXCLUDES_UPDATER =
-        new String[]
-        {
-            EXCLUDE_PATTERN_CLASSES, EXCLUDE_PATTERN_LIB, EXCLUDE_PATTERN_SVN, EXCLUDE_PATTERN_TARGET,
-            EXCLUDE_PATTERN_SRC, EXCLUDE_PATTERN_SETTINGS, "*.*"
-        };
-    protected static final String INCLUDE_PATTERN_RESOURCES = "**/fr/paris/lutece/**/resources/**";
+            new String[]
+    {
+        EXCLUDE_PATTERN_CLASSES, EXCLUDE_PATTERN_LIB, EXCLUDE_PATTERN_SVN, EXCLUDE_PATTERN_TARGET,
+        EXCLUDE_PATTERN_SRC, EXCLUDE_PATTERN_SETTINGS, "*.*"
+    };
     private static final String[] RELEASE_INCLUDES =
-        new String[] { "**/sql/**", "**/core/**/init*", "**/plugin/**/create*" };
-    private static final String[] RELEASE_EXCLUDES = new String[] { "**/.svn/**", "**/upgrades/**" };
+    {
+        "**/create*.sql", "**/init*.sql"
+    };
 
+    private static final String[] EXCLUDES =
+    {
+        "**/.svn/**"
+    };
     /**
      * The project's output directory.
      *
      * @parameter expression="${updOutputDirectory}"
      */
     protected File updOutputDirectory;
-
     /**
      * To look up Archiver/UnArchiver implementations
      *
@@ -76,222 +117,246 @@ public class UpdaterMojo
     /**
      * Executes the mojo on the current project.
      *
-     * @throws MojoExecutionException if an error occurred while building the artifact.
+     * @throws MojoExecutionException if an error occurred while building the
+     * artifact.
      */
-    public void execute(  )
-                 throws MojoExecutionException, MojoFailureException
+    @Override
+    public void execute()
+            throws MojoExecutionException, MojoFailureException
     {
-        if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) )
+        if (!LUTECE_CORE_PACKAGING.equals(project.getPackaging())
+                && !LUTECE_PLUGIN_PACKAGING.equals(project.getPackaging()))
         {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or " +
-                                              LUTECE_PLUGIN_PACKAGING + " project." );
+            throw new MojoExecutionException("This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or "
+                    + LUTECE_PLUGIN_PACKAGING + " project.");
         }
+        
+        getLog().info( "Version FROM : " + strDefinedFromVersion );
 
-        String strVersion = getVersion(  );
+        String strVersion = getVersion();
 
         // Build the release package
-        String[] releaseSqlFiles = getSqlFiles( RELEASE_INCLUDES, RELEASE_EXCLUDES );
-        assemblyBinaries( releaseSqlFiles, "release-" + strVersion );
+        String[] releaseSqlFiles = getSqlFiles(RELEASE_INCLUDES, EXCLUDES);
+        getLog().info("Building RELEASE package ...");
+
+        assemblyBinaries(releaseSqlFiles, "release-" + strVersion);
 
         // Build upgrades packages corresponding to sql upgrades
-        String[] includes = new String[] { "**/upgrades/**/*" + strVersion + ".sql" };
-        String[] upgradeSqlFiles = getSqlFiles( includes, null );
-
-        for ( int i = 0; i < upgradeSqlFiles.length; i++ )
+        String[] includes =
         {
-            String strVersionFrom = getVersionFrom( upgradeSqlFiles[i] );
+            "**/update*" + strVersion + ".sql"
+        };
+        String[] upgradeSqlFiles = getSqlFiles(includes, null);
 
-            if ( strVersionFrom != null )
+        if (upgradeSqlFiles.length > 0)
+        {
+            for (int i = 0; i < upgradeSqlFiles.length; i++)
             {
-                String[] files = new String[] { upgradeSqlFiles[i] };
-                assemblyBinaries( files, strVersionFrom + "-" + strVersion );
+                String strVersionFrom = getVersionFrom(upgradeSqlFiles[i]);
+
+                if (strVersionFrom != null)
+                {
+                    String[] files = new String[]
+                    {
+                        upgradeSqlFiles[i]
+                    };
+                    getLog().info("Building UPGRADE package from version " + strVersionFrom + " ...");
+                    assemblyBinaries(files, "upgrade-" + strVersionFrom + "-" + strVersion);
+                }
             }
         }
-
-        // Build simple upgrade package with no sql upgrade
-        assemblyBinaries( new String[] {  },
-                          "upgrade-" + strVersion );
+        else
+        {
+            
+            // Build simple upgrade package with no sql upgrade
+            getLog().info("Building UPGRADE package from version " + strDefinedFromVersion + " (No SQL file found) ...");
+            assemblyBinaries(null,  "upgrade-" + strDefinedFromVersion + "-" + strVersion);
+        }
     }
 
-    private File getOutputDirectory(  )
+    private File getOutputDirectory()
     {
-        String strPath = "";
+        String strPath;
 
-        if ( ( updOutputDirectory == null ) || "".equals( updOutputDirectory ) )
+        if ((updOutputDirectory != null) && !"".equals(updOutputDirectory))
         {
-            strPath = outputDirectory.getAbsolutePath(  );
-        } else
+            strPath = updOutputDirectory.getAbsolutePath();
+        }
+        else
         {
-            strPath = updOutputDirectory.getAbsolutePath(  );
+            strPath = outputDirectory.getAbsolutePath();
         }
 
-        strPath += ( File.separatorChar + project.getArtifactId(  ) );
+        strPath += (File.separatorChar + project.getArtifactId());
 
-        return new File( strPath );
+        return new File(strPath);
     }
 
-    private String[] getSqlFiles( String[] includes, String[] excludes )
+    private String[] getSqlFiles(String[] includes, String[] excludes)
     {
-        DirectoryScanner scanner = new DirectoryScanner(  );
-        scanner.setBasedir( sqlDirectory.getParentFile(  ) );
+        DirectoryScanner scanner = new DirectoryScanner();
+        scanner.setBasedir(sqlDirectory.getParentFile());
 
-        scanner.setIncludes( includes );
+        scanner.setIncludes(includes);
 
-        if ( excludes != null )
+        if (excludes != null)
         {
-            scanner.setExcludes( excludes );
+            scanner.setExcludes(excludes);
         }
 
-        scanner.scan(  );
+        scanner.scan();
 
-        return scanner.getIncludedFiles(  );
+        return scanner.getIncludedFiles();
     }
 
-    private String getVersion(  )
+    private String getVersion()
     {
-        String strVersion = project.getArtifact(  ).getVersion(  );
+        String strVersion = project.getArtifact().getVersion();
 
-        if ( strVersion.endsWith( "-SNAPSHOT" ) )
+        if (strVersion.endsWith("-SNAPSHOT"))
         {
             strVersion =
-                strVersion.substring( 0,
-                                      strVersion.indexOf( "-SNAPSHOT" ) );
-            getLog(  ).warn( "**** updater packages should not be assembly from SNAPSHOT ****" );
+                    strVersion.substring(0,
+                    strVersion.indexOf("-SNAPSHOT"));
+            getLog().warn("**** updater packages should not be assembly from SNAPSHOT ****");
         }
 
         return strVersion;
     }
 
-    private String getVersionFrom( String strFilename )
+    private String getVersionFrom(String strFilename)
     {
-        if ( ( strFilename.indexOf( "-" ) == -1 ) || ( strFilename.lastIndexOf( "-" ) == -1 ) )
+        if ((strFilename.indexOf("-") == -1) || (strFilename.lastIndexOf("-") == -1))
         {
             // there is an error in the file name
-            getLog(  ).warn( "Error in fileName : " + strFilename );
+            getLog().warn("Error in fileName : " + strFilename);
 
             return null;
         }
 
-        return strFilename.substring( strFilename.indexOf( "-" ) + 1,
-                                      strFilename.lastIndexOf( "-" ) );
+        return strFilename.substring(strFilename.indexOf("-") + 1,
+                strFilename.lastIndexOf("-"));
     }
 
     /**
      * Create a zip with binaries files.
      *
-     * @throws MojoExecutionException
-     *             if an error occurred while building the artifact.
+     * @throws MojoExecutionException if an error occurred while building the
+     * artifact.
      */
-    private synchronized void assemblyBinaries( String[] filenames, String strZipVersion )
-                                        throws MojoExecutionException
+    private synchronized void assemblyBinaries(String[] filenames, String strZipVersion)
+            throws MojoExecutionException
     {
         try
         {
             // Get the project type
-            String projectType = project.getArtifact(  ).getType(  );
+            String projectType = project.getArtifact().getType();
 
-            Archiver archiver = archiverManager.getArchiver( "jar" );
-
-            //MavenArchiver archiver = new MavenArchiver();
+            ////////////////////////////////////////////////////////////////////
+            // Build Plugin's jar
+            
+            getLog().info( "Build plugin's jar ...");
+            Archiver archiverLibrary = archiverManager.getArchiver("jar");
 
             // Create the jar file, containing compiled classes
-            File jarFile = getArchiveFile( null,
-                                           false,
-                                           "jar",
-                                           project.getArtifact(  ).getVersion(  ) );
+            File jarFile = getArchiveFile(null, false, "jar", project.getArtifact().getVersion());
+            archiverLibrary.setDestFile(jarFile);
 
-            //archiver.setArchiver(jarArchiver);
-            archiver.setDestFile( jarFile );
-
-            if ( ! classesDirectory.exists(  ) )
+            if (!classesDirectory.exists())
             {
-                getLog(  ).warn( "Could not find classes directory " + classesDirectory.getAbsolutePath(  ) );
-            } else
+                getLog().warn("Could not find classes directory " + classesDirectory.getAbsolutePath());
+            }
+            else
             {
-                archiver.addDirectory( classesDirectory, PACKAGE_CLASSES_INCLUDES, PACKAGE_CLASSES_EXCLUDES );
+                archiverLibrary.addDirectory(classesDirectory, PACKAGE_CLASSES_INCLUDES, PACKAGE_CLASSES_EXCLUDES);
             }
 
-            archiver.createArchive(  );
+            archiverLibrary.createArchive();
 
-            archiver = archiverManager.getArchiver( "zip" );
+            ////////////////////////////////////////////////////////////////////
+            // Build Plugin's package
+ 
+            getLog().info( "Build plugin's package ...");
+            
+            Archiver archiverPackage = archiverManager.getArchiver("zip");
 
             // Create the final zip file
-            File webappZip = null;
-            webappZip = getArchiveFile( ( LUTECE_CORE_TYPE.equals( projectType ) ? "war" : "upd" ), false, "zip",
-                                        strZipVersion );
+            File webappZip;
+            webappZip = getArchiveFile( "upd", false, "zip", strZipVersion);
 
-            archiver.setDestFile( webappZip );
+            archiverPackage.setDestFile(webappZip);
 
-            /*zipBinArchiver.reset();
-            zipBinArchiver.setCompress(true);
-            zipBinArchiver.setForced(false);
-            zipBinArchiver.setDestFile(webappZip);*/
-            if ( LUTECE_PLUGIN_TYPE.equals( projectType ) )
+            getLog().debug("Package file : " + webappZip.getAbsolutePath() );
+
+            if (LUTECE_PLUGIN_TYPE.equals(projectType))
             {
                 /**
                  * Add the sql directory
                  */
-                for ( int i = 0; i < filenames.length; i++ )
+                if (filenames != null)
                 {
-                    File f = new File( sqlDirectory.getParentFile(  ),
-                                       filenames[i] );
-                    archiver.addFile( f, SQL_FOLDER_PATH + f.getName(  ) );
+                    for (int i = 0; i < filenames.length; i++)
+                    {
+                        File f = new File(sqlDirectory.getParentFile(),
+                                filenames[i]);
+                        archiverPackage.addFile(f, SQL_FOLDER_PATH + f.getName());
+                    }
                 }
 
                 // Add the resource files
                 /*
-                * if (resourcesDirectory.exists()) {
-                * zipBinArchiver.addDirectory(resourcesDirectory,
-                * ASSEMBLY_WEBAPP_INCLUDES, ASSEMBLY_WEBAPP_EXCLUDES); }
-                */
+                 * if (resourcesDirectory.exists()) {
+                 * zipBinArchiver.addDirectory(resourcesDirectory,
+                 * ASSEMBLY_WEBAPP_INCLUDES, ASSEMBLY_WEBAPP_EXCLUDES); }
+                 */
 
                 // Add the webapp files
-                if ( webappSourceDirectory.exists(  ) )
+                if (webappSourceDirectory.exists())
                 {
-                    archiver.addDirectory( webappSourceDirectory.getParentFile(  ),
-                                           ASSEMBLY_WEBAPP_INCLUDES,
-                                           ASSEMBLY_WEBAPP_EXCLUDES_UPDATER );
+                    archiverPackage.addDirectory(webappSourceDirectory.getParentFile(),
+                            ASSEMBLY_WEBAPP_INCLUDES,
+                            ASSEMBLY_WEBAPP_EXCLUDES_UPDATER);
                 }
 
                 // add the Classes resources directories to the archive
-                if ( classesDirectory.exists(  ) )
+                if (classesDirectory.exists())
                 {
-                    archiver.addDirectory( classesDirectory, WEB_INF_CLASSES_PATH, PACKAGE_WEBAPP_RESOURCES_INCLUDE,
-                                           PACKAGE_WEBAPP_RESOURCES_EXCLUDES );
+                    archiverPackage.addDirectory(classesDirectory, WEB_INF_CLASSES_PATH, PACKAGE_WEBAPP_RESOURCES_INCLUDE,
+                            PACKAGE_WEBAPP_RESOURCES_EXCLUDES);
                 }
 
                 // Add the site user directories to WEB-INF/doc/xml/ folder
-                if ( siteDirectory.exists(  ) )
+                if (siteDirectory.exists())
                 {
-                    archiver.addDirectory( siteDirectory, WEB_INF_DOC_XML_PATH, ASSEMBLY_WEBAPP_SITE_INCLUDES,
-                                           ASSEMBLY_WEBAPP_SITE_EXCLUDES );
+                    archiverPackage.addDirectory(siteDirectory, WEB_INF_DOC_XML_PATH, ASSEMBLY_WEBAPP_SITE_INCLUDES,
+                            ASSEMBLY_WEBAPP_SITE_EXCLUDES);
                 }
 
                 // Add jar
-                archiver.addFile( jarFile, WEB_INF_LIB_PATH + jarFile.getName(  ) );
+                archiverPackage.addFile(jarFile, WEB_INF_LIB_PATH + jarFile.getName());
 
                 // Add the dependency libraries
-                for ( File f : getDependentJars(  ) )
+                for (File f : getDependentJars())
                 {
-                    if ( ( null != f ) && f.exists(  ) )
+                    if ((null != f) && f.exists())
                     {
-                        archiver.addFile( f, WEB_INF_LIB_PATH + f.getName(  ) );
+                        archiverPackage.addFile(f, WEB_INF_LIB_PATH + f.getName());
                     }
                 }
             }
 
             // Finaly build the zip file.
-            archiver.createArchive(  );
+            archiverPackage.createArchive();
 
             // Delete temp files
-            if ( jarFile.exists(  ) )
+            if (jarFile.exists())
             {
-                jarFile.delete(  );
+                jarFile.delete();
             }
-        } catch ( Exception e )
+        }
+        catch (Exception e)
         {
-            throw new MojoExecutionException( "Error assembling ZIP", e );
+            throw new MojoExecutionException("Error assembling ZIP", e);
         }
     }
 
@@ -299,24 +364,19 @@ public class UpdaterMojo
      * Builds the name of the destination ZIP file with a timestamp if
      * necessary.
      *
-     * @param classifier
-     *            The type of target appears in the name (bin or src)
-     * @param timestamp
-     *            Tell if the file name must contain timestamp.
-     * @param extension
-     *            The extension of tager file.
+     * @param classifier The type of target appears in the name (bin or src)
+     * @param timestamp Tell if the file name must contain timestamp.
+     * @param extension The extension of tager file.
      * @return new File build with params.
      */
-    private File getArchiveFile( String classifier, boolean timestamp, String extension, String strZipVersion )
+    private File getArchiveFile(String classifier, boolean timestamp, String extension, String strZipVersion)
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat( "yyMMdd-hhmm" );
-        dateFormat.format( new Date(  ) ).toString(  );
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd-hhmm");
+        dateFormat.format(new Date()).toString();
 
-        return new File( getOutputDirectory(  ),
-                         project.getArtifactId(  ) + ( ( null != classifier ) ? ( "-" + classifier ) : "" ) + "-" +
-                         strZipVersion + ( 
-                                             timestamp ? ( "-" + dateFormat.format( new Date(  ) ).toString(  ) ) : ""
-                                          ) + "." + extension );
+        return new File(getOutputDirectory(),
+                project.getArtifactId() + ((null != classifier) ? ("-" + classifier) : "") + "-"
+                + strZipVersion + (timestamp ? ("-" + dateFormat.format(new Date()).toString()) : "") + "." + extension);
     }
 
     /**
@@ -324,35 +384,36 @@ public class UpdaterMojo
      *
      * @return Collection of jar
      */
-    @SuppressWarnings( "unchecked" )
-    private Collection<File> getDependentJars(  )
+    @SuppressWarnings("unchecked")
+    private Collection<File> getDependentJars()
     {
-        HashSet<File> result = new HashSet<File>(  );
+        HashSet<File> result = new HashSet<File>();
 
         // Direct dependency artifacts of project
-        Set<Artifact> resultArtifact = new HashSet<Artifact>(  );
+        Set<Artifact> resultArtifact = new HashSet<Artifact>();
 
-        for ( Object o : project.getDependencyArtifacts(  ) )
+        for (Object o : project.getDependencyArtifacts())
         {
-            Artifact a = null;
+            Artifact a;
 
             try
             {
                 a = (Artifact) o;
-            } catch ( ClassCastException e )
+            }
+            catch (ClassCastException e)
             {
-                e.printStackTrace(  );
+                getLog().error(e);
 
                 continue;
             }
 
-            if ( ! LUTECE_CORE_TYPE.equals( a.getType(  ) ) &&
-                     ! LUTECE_PLUGIN_TYPE.equals( a.getType(  ) ) &&
-                     ! Artifact.SCOPE_PROVIDED.equals( a.getScope(  ) ) &&
-                     ! Artifact.SCOPE_TEST.equals( a.getScope(  ) ) )
+            if (!LUTECE_CORE_TYPE.equals(a.getType())
+                    && !LUTECE_PLUGIN_TYPE.equals(a.getType())
+                    && !Artifact.SCOPE_PROVIDED.equals(a.getScope())
+                    && !Artifact.SCOPE_TEST.equals(a.getScope()))
             {
-                resultArtifact.add( a );
-                result.add( a.getFile(  ) );
+                resultArtifact.add(a);
+                result.add(a.getFile());
             }
         }
 
@@ -362,41 +423,46 @@ public class UpdaterMojo
         try
         {
             artifactResolutionResult =
-                resolver.resolveTransitively( resultArtifact,
-                                              project.getArtifact(  ),
-                                              remoteRepositories,
-                                              localRepository,
-                                              metadataSource );
-        } catch ( ArtifactResolutionException e )
+                    resolver.resolveTransitively(resultArtifact,
+                    project.getArtifact(),
+                    remoteRepositories,
+                    localRepository,
+                    metadataSource);
+        }
+        catch (ArtifactResolutionException e)
         {
-            e.printStackTrace(  );
-        } catch ( ArtifactNotFoundException e )
+            getLog().error(e);
+        }
+        catch (ArtifactNotFoundException e)
         {
-            e.printStackTrace(  );
+            getLog().error(e);
         }
 
-        for ( Object o : artifactResolutionResult.getArtifacts(  ) )
+        if (artifactResolutionResult != null)
         {
-            Artifact a = null;
-
-            try
+            for (Object o : artifactResolutionResult.getArtifacts())
             {
-                a = (Artifact) o;
-            } catch ( ClassCastException e )
-            {
-                e.printStackTrace(  );
+                Artifact a;
 
-                continue;
-            }
+                try
+                {
+                    a = (Artifact) o;
+                }
+                catch (ClassCastException e)
+                {
+                    getLog().error(e);
 
-            if ( ! Artifact.SCOPE_PROVIDED.equals( a.getScope(  ) ) &&
-                     ! Artifact.SCOPE_TEST.equals( a.getScope(  ) ) // for transitively dependencies artifact are not a good
-                                                                        // scope ( junit and servlet-api )
-                      &&
-                     ! JUNIT.equals( a.getArtifactId(  ) ) &&
-                     ! SERVELT_API.equals( a.getArtifactId(  ) ) )
-            {
-                result.add( a.getFile(  ) );
+                    continue;
+                }
+
+                if (!Artifact.SCOPE_PROVIDED.equals(a.getScope())
+                        && !Artifact.SCOPE_TEST.equals(a.getScope()) // for transitively dependencies artifact are not a good
+                        // scope ( junit and servlet-api )
+                        && !JUNIT.equals(a.getArtifactId())
+                        && !SERVELT_API.equals(a.getArtifactId()))
+                {
+                    result.add(a.getFile());
+                }
             }
         }
 

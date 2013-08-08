@@ -373,7 +373,7 @@ public abstract class AbstractLuteceWebappMojo
      * @throws MojoExecutionException
      *             if an error occurs while copying the files.
      */
-    private void copyThirdPartyJars( File webappDir )
+    protected void copyThirdPartyJars( File webappDir )
                              throws MojoExecutionException
     {
         File webinfLib = new File( webappDir, "WEB-INF/lib" );

@@ -140,6 +140,9 @@ public class ExplodedMojo
                     webinfLib.mkdirs(  );
                 }
 
+                // Resolve dependencies in multi-project (multiProjectArtifacts)
+                copyThirdPartyJars( testWebappDirectory );
+
                 // copy dependencies in directory WEB-INF/lib
                 Set<Artifact> artifactsToCopy = new LinkedHashSet<Artifact>(  );
                 Set<Artifact> artifactsToDelete = new LinkedHashSet<Artifact>(  );

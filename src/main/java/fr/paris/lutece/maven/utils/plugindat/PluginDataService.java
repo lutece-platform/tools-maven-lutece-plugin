@@ -73,9 +73,9 @@ public class PluginDataService
         File[] files = filePluginsDirectory.listFiles( filter );
         List<PluginData> list = new ArrayList<PluginData>(  );
 
-        for ( int i = 0; i < files.length; i++ )
+        for (File file : files)
         {
-            PluginDataParser.parse( files[i], list );
+            PluginDataParser.parse(file, list);
         }
 
         return list;
@@ -160,6 +160,7 @@ public class PluginDataService
 class PluginFileFilter
     implements FilenameFilter
 {
+    @Override
     public boolean accept( File dir, String strFilename )
     {
         if ( strFilename.endsWith( ".xml" ) )

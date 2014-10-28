@@ -73,9 +73,12 @@ public class PluginDataService
         File[] files = filePluginsDirectory.listFiles( filter );
         List<PluginData> list = new ArrayList<PluginData>(  );
 
-        for (File file : files)
+        if( files != null )
         {
-            PluginDataParser.parse(file, list);
+            for (File file : files)
+            {
+                PluginDataParser.parse(file, list);
+            }
         }
 
         return list;

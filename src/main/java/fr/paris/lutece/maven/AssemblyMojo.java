@@ -1,3 +1,36 @@
+/*
+ * Copyright (c) 2002-2015, Mairie de Paris
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice
+ *     and the following disclaimer.
+ *
+ *  2. Redistributions in binary form must reproduce the above copyright notice
+ *     and the following disclaimer in the documentation and/or other materials
+ *     provided with the distribution.
+ *
+ *  3. Neither the name of 'Mairie de Paris' nor 'Lutece' nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * License 1.0
+ */
 package fr.paris.lutece.maven;
 
 import org.apache.maven.archiver.MavenArchiveConfiguration;
@@ -19,6 +52,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.maven.plugins.annotations.Mojo;
 
 /**
  * Assembly zips for Lutece core or plugin project.<br/> If you wish to force
@@ -29,6 +63,8 @@ import java.util.Set;
  * @execute phase="process-classes"
  * @requiresDependencyResolution compile
  */
+
+@Mojo( name = "assembly" )
 public class AssemblyMojo
     extends AbstractLuteceWebappMojo
 {
@@ -83,7 +119,7 @@ public class AssemblyMojo
     /**
      * The Zip archiver.
      *
-     * @parameter expression="${component.org.codehaus.plexus.archiver.Archiver#zip}"
+     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="zip"
      * @required
      */
     private ZipArchiver zipSrcArchiver;
@@ -91,7 +127,7 @@ public class AssemblyMojo
     /**
      * The Zip archiver.
      *
-     * @parameter expression="${component.org.codehaus.plexus.archiver.Archiver#zip}"
+     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="zip"
      * @required
      */
     private ZipArchiver zipBinArchiver;
@@ -99,7 +135,7 @@ public class AssemblyMojo
     /**
      * The Jar archiver.
      *
-     * @parameter expression="${component.org.codehaus.plexus.archiver.Archiver#jar}"
+     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="jar"
      * @required
      */
     private JarArchiver jarArchiver;
@@ -107,7 +143,7 @@ public class AssemblyMojo
     /**
      * The War archiver.
      *
-     * @parameter expression="${component.org.codehaus.plexus.archiver.Archiver#war}"
+     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="war"
      * @required
      */
     private WarArchiver warArchiver;

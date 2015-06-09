@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2008, Mairie de Paris
+ * Copyright (c) 2002-2015, Mairie de Paris
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import org.apache.maven.plugins.annotations.Mojo;
 
 /**
  * Builds a site's final WAR from a Lutece core artifact and a set of Lutece
@@ -59,6 +60,9 @@ import java.util.TimeZone;
  * @goal site-assembly
  * @requiresDependencyResolution compile
  */
+
+@Mojo( name = "site-assembly" )
+
 public class AssemblySiteMojo
     extends AbstractLuteceWebappMojo
 {
@@ -110,7 +114,7 @@ public class AssemblySiteMojo
     /**
      * The Jar archiver.
      *
-     * @parameter expression="${component.org.codehaus.plexus.archiver.Archiver#jar}"
+     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="jar"
      * @required
      */
     private JarArchiver jarArchiver;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2008, Mairie de Paris
+ * Copyright (c) 2002-2015, Mairie de Paris
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.maven.plugins.annotations.Mojo;
 
 /**
  * Explodes a test webapp for a Lutece plugin or site project.<br/> Note that
@@ -74,6 +75,8 @@ import java.util.Set;
  * @execute phase="process-classes"
  * @requiresDependencyResolution compile
  */
+
+@Mojo( name = "exploded" )
 public class ExplodedMojo
     extends AbstractLuteceWebappMojo
 {

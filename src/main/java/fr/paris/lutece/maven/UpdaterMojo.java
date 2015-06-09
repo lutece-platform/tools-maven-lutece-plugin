@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013, Mairie de Paris
+ * Copyright (c) 2002-2015, Mairie de Paris
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.maven.plugins.annotations.Mojo;
 
 /**
  * Assembly zips for Lutece core or plugin project.<br/> If you wish to force
@@ -61,6 +62,8 @@ import java.util.Set;
  * @execute phase="process-classes"
  * @requiresDependencyResolution compile
  */
+
+@Mojo( name = "updater" )
 public class UpdaterMojo extends AbstractLuteceWebappMojo
 {
 

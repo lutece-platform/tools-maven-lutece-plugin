@@ -91,8 +91,15 @@ public class PluginDataService
      */
     public static void writeFile( File file, List<PluginData> list )
     {
-        FileWriter fw = null;
 
+        File parentDirectory = file.getParentFile();
+
+        if (null != parentDirectory)
+        {
+            parentDirectory.mkdirs();
+        }
+
+        FileWriter fw = null;
         try
         {
             fw = new FileWriter( file );
@@ -151,8 +158,7 @@ public class PluginDataService
     {
         List<PluginData> list = PluginDataService.getPluginsList( strWebappPath );
         // Write the plugin.dat file
-        PluginDataService.writeFile( PluginDataService.getPluginsDatFile( strWebappPath ),
-                                     list );
+        PluginDataService.writeFile( getPluginsDatFile( strWebappPath ), list );
     }
 }
 

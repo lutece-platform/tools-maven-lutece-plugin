@@ -1,8 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
     <parent>
         <artifactId>lutece-global-pom</artifactId>
         <groupId>fr.paris.lutece.tools</groupId>
-        <version>2.4</version>
+        <version>3.0.1</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -10,30 +11,24 @@
     <artifactId>lutece-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
     <version>4.0.0-SNAPSHOT</version>
-    <name>Lutece Plugin for Maven 3</name>
+    <name>Lutece maven plugin</name>
+
     <description>
         A Maven plugin which handles the common tasks to develop and
         package the Lutece core and Lutece plugins, and to assemble a
         web site from a set of Lutece artifacts.
     </description>
+
     <inceptionYear>2006</inceptionYear>
+
     <organization>
         <name>Mairie de Paris</name>
         <url>http://lutece.paris.fr</url>
     </organization>
+
     <url>http://dev.lutece.paris.fr/plugins/${project.artifactId}/</url>
 
-<!--
     <repositories>
-        <repository>
-            <id>lutece</id>
-            <name>luteceRepository</name>
-            <url>http://dev.lutece.paris.fr/maven_repository</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
---> 
-   <repositories>
         <repository>
             <id>luteceSnapshot</id>
             <name>luteceSnapshot</name>
@@ -172,10 +167,11 @@
             </plugin>
         </plugins>
     </build>
+    
     <scm>
-        <connection>scm:svn:http://dev.lutece.paris.fr/svn/lutece/tools/lutece-maven-plugin/trunk</connection>
-        <developerConnection>scm:svn:https://dev.lutece.paris.fr/svn/lutece/tools/lutece-maven-plugin/trunk</developerConnection>
-        <url>http://dev.lutece.paris.fr/svn/lutece/tools/lutece-maven-plugin/trunk</url>
+        <connection>scm:git:https://github.com/lutece-platform/tools-maven-lutece-plugin.git</connection>
+        <developerConnection>scm:git:https://github.com/lutece-platform/tools-maven-lutece-plugin.git</developerConnection>
+        <url>https://github.com/lutece-platform/tools-maven-lutece-plugin.git</url>
     </scm>
 
     <distributionManagement>
@@ -188,8 +184,8 @@
     </distributionManagement>
 
     <properties>
-        <jiraProjectName>TOOLS</jiraProjectName>
-        <jiraComponentId>10021</jiraComponentId>
+        <jiraProjectName>MAVENPLUGIN</jiraProjectName>
+        <jiraComponentId>10157</jiraComponentId>
     </properties>
 	
 </project>

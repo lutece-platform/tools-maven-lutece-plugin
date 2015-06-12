@@ -149,14 +149,32 @@
       <tag>tools-maven-lutece-plugin-4.0.0</tag>
   </scm>
 
-    <distributionManagement>
+  <distributionManagement>
+        <repository>
+            <id>lutece_releases_repository</id>
+            <url>http://dev.lutece.paris.fr/nexus/content/repositories/lutece_releases_repository</url>
+        </repository>
+                
+        <snapshotRepository>
+            <uniqueVersion>true</uniqueVersion>
+            <id>lutece_snapshots_repository</id>
+            <url>http://dev.lutece.paris.fr/nexus/content/repositories/lutece_snapshots_repository</url>
+        </snapshotRepository>
+        
+        <site>
+            <id>lutece_ftp_site_maven</id>
+            <url>ftp://site-deploy.dev.lutece.paris.fr/site/plugins</url>
+        </site>
+  </distributionManagement>
+
+    <!--<distributionManagement>
         <site>
             <id>ssh-repository</id>
             <url>
                 scp://${serverUrl}/opt/lutece/site/plugins/${project.artifactId}
             </url>
         </site>
-    </distributionManagement>
+    </distributionManagement>-->
 
     <properties>
         <jiraProjectName>MAVENPLUGIN</jiraProjectName>

@@ -103,10 +103,10 @@ public class ExplodedMojo
         getLog(  ).info( " __        __    __   ________  ________  ________  ________" );
         getLog(  ).info( "   |         |     |          |         |         |         |" );
         getLog(  ).info( "   |         |     |       |      |__       |         |__    " );
-        getLog(  ).info( "   |         |     |       |         |      |            |    Maven Plugin" );
-        getLog(  ).info( "   |____     |___  |       |      |_____    |_____    |_____  Version: 4.0" );
+        getLog(  ).info( "   |         |     |       |         |      |            |   " );
+        getLog(  ).info( "   |____     |___  |       |      |_____    |_____    |_____ " );
         getLog(  ).info( "        |          |       |            |         |         |" );
-        
+        getLog(  ).info( "              LUTECE Maven Plugin - Version : 4.0            " );
         
         if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
                  ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&

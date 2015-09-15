@@ -146,24 +146,21 @@ public class PackageMojo
 
         try
         {
-            if ( ! LUTECE_SITE_TYPE.equals( project.getArtifact(  ).getType(  ) ) )
+            // Package the classes JAR
+            archiver.setArchiver( jarArchiver );
+            archiver.setOutputFile( classesJar );
+            archiveCfg.setForced( forceCreation );
+
+            if ( ! classesDirectory.exists(  ) )
             {
-                // Package the classes JAR
-                archiver.setArchiver( jarArchiver );
-                archiver.setOutputFile( classesJar );
-                archiveCfg.setForced( forceCreation );
-
-                if ( ! classesDirectory.exists(  ) )
-                {
-                    getLog(  ).warn( "Could not find classes directory " + classesDirectory.getAbsolutePath(  ) );
-                } else
-                {
-                    archiver.getArchiver(  )
-                            .addDirectory( classesDirectory, PACKAGE_CLASSES_INCLUDES, PACKAGE_CLASSES_EXCLUDES );
-                }
-
-                archiver.createArchive( null, project, archiveCfg );
+                getLog(  ).warn( "Could not find classes directory " + classesDirectory.getAbsolutePath(  ) );
+            } else
+            {
+                archiver.getArchiver(  )
+                        .addDirectory( classesDirectory, PACKAGE_CLASSES_INCLUDES, PACKAGE_CLASSES_EXCLUDES );
             }
+
+            archiver.createArchive( null, project, archiveCfg );
 
             // Package the webapp ZIP
             zipArchiver.setCompress( true );

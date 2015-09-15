@@ -89,5 +89,22 @@
 				</phases>
 			</configuration>
 		</component>
+
+		<!--
+			The artifact handler for Lutece site components.
+                        For now, not used, but helps with maven's artifact resolution
+		-->
+		<component>
+			<role>org.apache.maven.artifact.handler.ArtifactHandler</role>
+			<role-hint>lutece-site</role-hint>
+			<implementation>org.apache.maven.artifact.handler.DefaultArtifactHandler</implementation>
+			<configuration>
+				<extension>jar</extension>
+				<type>lutece-site</type>
+				<language>java</language>
+				<addedToClasspath>true</addedToClasspath>
+				<includesDependencies>false</includesDependencies>
+			</configuration>
+		</component>
 	</components>
 </component-set>

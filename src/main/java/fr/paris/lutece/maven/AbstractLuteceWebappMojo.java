@@ -497,25 +497,22 @@ public abstract class AbstractLuteceWebappMojo
     protected void addToExplodedWebapp( Artifact luteceArtifact, File webappDir )
                                 throws MojoExecutionException
     {
-        if ( !LUTECE_SITE_TYPE.equals( luteceArtifact.getType(  ) ) )
+        // Copy the artifact's main JAR to WEB-INF/lib
+        File repoJar = luteceArtifact.getFile(  );
+
+        File webinfLib = new File( webappDir, "WEB-INF/lib" );
+        webinfLib.mkdirs(  );
+
+        File webinfJar = new File( webinfLib,
+                                   repoJar.getName(  ) );
+
+        try
         {
-           // Copy the artifact's main JAR to WEB-INF/lib
-           File repoJar = luteceArtifact.getFile(  );
-
-           File webinfLib = new File( webappDir, "WEB-INF/lib" );
-           webinfLib.mkdirs(  );
-
-           File webinfJar = new File( webinfLib,
-                                      repoJar.getName(  ) );
-
-           try
-           {
-               FileUtils.copyFileIfModified( repoJar, webinfJar );
-           } catch ( IOException e )
-           {
-               throw new MojoExecutionException( "Error while copying " + repoJar.getAbsolutePath(  ) + " to " +
-                                                 webinfJar.getAbsolutePath(  ), e );
-           }
+            FileUtils.copyFileIfModified( repoJar, webinfJar );
+        } catch ( IOException e )
+        {
+            throw new MojoExecutionException( "Error while copying " + repoJar.getAbsolutePath(  ) + " to " +
+                                              webinfJar.getAbsolutePath(  ), e );
         }
 
         // Every Lutece artifact has an attached webapp artifact

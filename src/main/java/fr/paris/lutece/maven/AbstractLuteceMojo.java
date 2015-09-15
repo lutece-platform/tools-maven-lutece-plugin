@@ -64,6 +64,11 @@ public abstract class AbstractLuteceMojo
     protected static final String LUTECE_CORE_TYPE = "lutece-core";
 
     /**
+     * The name of the lutece site artifact type.
+     */
+    protected static final String LUTECE_SITE_TYPE = "lutece-site";
+
+    /**
      * The name of the lutece core packaging.
      */
     protected static final String LUTECE_CORE_PACKAGING = "lutece-core";

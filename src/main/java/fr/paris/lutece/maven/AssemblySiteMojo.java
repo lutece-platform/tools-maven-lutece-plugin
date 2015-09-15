@@ -58,6 +58,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  * dependency), call the <code>clean</code> phase before this goal.
  *
  * @goal site-assembly
+ * @execute phase="process-resources"
  * @requiresDependencyResolution compile
  */
 

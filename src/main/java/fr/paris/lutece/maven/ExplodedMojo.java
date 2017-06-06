@@ -456,19 +456,24 @@ public class ExplodedMojo
                 if ( artifact.getArtifactId(  ).equals( multiprojetArtifact.getArtifactId(  ) ) &&
                          artifact.getGroupId(  ).equals( multiprojetArtifact.getGroupId(  ) ) )
                 {
-                    // Compare version
-                    try
-                    {
-                        if ( artifact.getSelectedVersion(  ).compareTo( multiprojetArtifact.getSelectedVersion(  ) ) > 0 )
+                    //Workaround MAVENPLUGIN-33 - NullPointerException when doing multi-project with excluded dependencies
+                    //Some excluded artifacts are in the list but with a null VersionRange, which triggers an NPE in getSelectedVersion()..
+                    //Skip them because we want to exclude them anyway.
+                    if ( artifact.getVersionRange( ) != null ) {
+                        // Compare version
+                        try
                         {
-                            artifactsToDelete.add( multiprojetArtifact );
-                        } else
+                            if ( artifact.getSelectedVersion(  ).compareTo( multiprojetArtifact.getSelectedVersion(  ) ) > 0 )
+                            {
+                                artifactsToDelete.add( multiprojetArtifact );
+                            } else
+                            {
+                                bIsInMultiProject = true;
+                            }
+                        } catch ( OverConstrainedVersionException e )
                         {
-                            bIsInMultiProject = true;
+                            throw new MojoExecutionException( "Error while removing comparing versions", e );
                         }
-                    } catch ( OverConstrainedVersionException e )
-                    {
-                        throw new MojoExecutionException( "Error while removing comparing versions", e );
                     }
 
                     break;

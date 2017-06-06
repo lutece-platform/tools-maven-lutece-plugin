@@ -15,6 +15,11 @@
 
     <inceptionYear>2006</inceptionYear>
 
+    <!-- Useful for version:display-plugin-updates -->
+    <prerequisites>
+        <maven>3.0.5</maven>
+    </prerequisites>
+
     <organization>
         <name>Mairie de Paris</name>
         <url>http://lutece.paris.fr</url>
@@ -105,7 +110,7 @@
             <!-- Configuration to release from GitHub -->
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>2.5.3</version>
                 <configuration>
                     <providerImplementations>
                         <git>jgit</git>
@@ -122,7 +127,7 @@
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.6.1</version>
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
@@ -133,7 +138,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.4.3</version>
+                <version>3.0.2</version>
                 <configuration>
                     <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>

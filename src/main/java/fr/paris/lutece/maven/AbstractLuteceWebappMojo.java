@@ -33,6 +33,17 @@
  */
 package fr.paris.lutece.maven;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.stream.Stream;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -40,14 +51,7 @@ import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 
 /**
  * Abstracts functionnality common to mojos that create a Lutece webapp from
@@ -162,6 +166,9 @@ public abstract class AbstractLuteceWebappMojo
 
             // Copy third-party JARs
             copyThirdPartyJars( targetDir );
+            
+            // Copy Build Config
+            copyBuildConfig( targetDir );
 
             if ( ! isInplace && webappSourceDirectory.exists(  ) )
             {
@@ -609,5 +616,63 @@ public abstract class AbstractLuteceWebappMojo
         }
 
         return new File( mp.getBuild(  ).getDirectory(  ) );
+    }
+    
+    protected void copyBuildConfig( File targetDir ) throws MojoExecutionException
+    {
+        Set<Artifact> artifactSet = filterArtifacts( a -> ARTIFACT_BUILD_CONFIG.contentEquals( a.getArtifactId( ) ) );
+        
+        if ( artifactSet == null || artifactSet.isEmpty(  ) || artifactSet.size(  ) > 1 )
+        {
+            throw new MojoExecutionException( "Project \"" + project.getName(  ) +
+                                              "\" must have exactly one dependency named " + ARTIFACT_BUILD_CONFIG );
+        }
+        Artifact buildConfig = artifactSet.iterator( ).next( );
+        
+        Path sqlDir = Paths.get( targetDir.getAbsolutePath( ), WEB_INF_SQL_PATH );
+        sqlDir.toFile( ).mkdirs(  );
+        
+        unArchiver.setSourceFile( buildConfig.getFile(  ) );
+        unArchiver.setDestDirectory( sqlDir.toFile( ) );
+        unArchiver.extract( BUILD_CONFIG_PATH + ANT_PATH, sqlDir.toFile( ) );
+        
+        Path buildConfigDir = sqlDir.resolve( BUILD_CONFIG_PATH );
+        Path antDir = buildConfigDir.resolve( ANT_PATH );
+        try ( Stream<Path> stream = Files.walk( antDir ) )
+        {
+            stream.forEach( source -> {
+                if ( !antDir.toFile( ).equals( source.toFile( ) ) )
+                {
+                    try
+                    {
+                        Path dest = sqlDir.resolve( antDir.relativize( source ) );
+                        if ( !source.toFile( ).isDirectory( ) )
+                        {
+                            Files.copy( source,  dest, StandardCopyOption.REPLACE_EXISTING );
+                        }
+                        else if ( !dest.toFile( ).exists( ) )
+                        {
+                            dest.toFile( ).mkdirs(  );
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        getLog( ).warn( "Error while copying file " + source.toFile( ).getAbsolutePath( ), e );
+                    }
+                }
+            } );
+        }
+        catch ( IOException e )
+        {
+            throw new MojoExecutionException( "Error while copying build config ", e );
+        }
+        
+        try {
+            org.codehaus.plexus.util.FileUtils.deleteDirectory( buildConfigDir.toFile( ) );
+        }
+        catch ( IOException e )
+        {
+            throw new MojoExecutionException( "Error while cleaning build config ", e );
+        }
     }
 }

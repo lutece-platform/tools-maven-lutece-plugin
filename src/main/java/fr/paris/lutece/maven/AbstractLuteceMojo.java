@@ -99,6 +99,8 @@ public abstract class AbstractLuteceMojo
      * The name of the lutece directory.
      */
     protected static final String LUTECE_DIRECTORY = "lutece";
+    
+    protected static final String ARTIFACT_BUILD_CONFIG = "build-config";
 
     /**
      * Constants used to create inclusion or exclusion rules, for the zip, jar
@@ -182,6 +184,9 @@ public abstract class AbstractLuteceMojo
 
     // The path to the sql directory
     protected static final String WEB_INF_SQL_PATH = "WEB-INF/sql/";
+    
+    protected static final String BUILD_CONFIG_PATH = "build-config/";
+    protected static final String ANT_PATH = "ant/";
 
     //the path to the site directory
     protected static final String WEB_INF_DOC_XML_PATH = "doc/xml/";

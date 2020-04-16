@@ -1,11 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.paris.lutece.tools</groupId>
     <artifactId>lutece-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <version>4.0.4-SNAPSHOT</version>
+    <version>4.1.0</version>
     <name>Lutece maven plugin</name>
 
     <description>
@@ -196,7 +195,7 @@
         <developerConnection>scm:git:https://github.com/lutece-platform/tools-maven-lutece-plugin.git
         </developerConnection>
         <url>https://github.com/lutece-platform/tools-maven-lutece-plugin.git</url>
-        <tag>tools-maven-lutece-plugin-4.0.0</tag>
+        <tag>tools-maven-lutece-plugin-4.1.0</tag>
     </scm>
 
 

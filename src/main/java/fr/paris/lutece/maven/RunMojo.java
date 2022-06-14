@@ -74,6 +74,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
@@ -161,6 +162,16 @@ public class RunMojo extends AbstractAssemblySiteMojo {
      */
     @Parameter(property = "lutece.run.tomcat.jarFilterExclusions", defaultValue = "")
     private String jarFilterExclusions;
+
+    /**
+     * Custom SQL scripts to executes (often plugins or upgrades ones).
+     * Path is relative to the execution directory so ensure to use {@code ${project.build.directory}} or other maven variables.
+     * It is only done for HSQLDB mode, not for MySQL one which is assumed reusing an external/existing database.
+     *
+     * @parameter
+     */
+    @Parameter
+    private List<String> sqlScripts;
 
     /**
      * Custom core artifacts to use.
@@ -657,6 +668,11 @@ public class RunMojo extends AbstractAssemblySiteMojo {
             final Path base = dir.toPath();
             hsqldbStatement(base.resolve("WEB-INF/sql/create_db_lutece_core.sql"), statement);
             hsqldbStatement(base.resolve("WEB-INF/sql/init_db_lutece_core.sql"), statement);
+            if (sqlScripts != null && !sqlScripts.isEmpty()) {
+                for (final String script : sqlScripts) {
+                    hsqldbStatement(Paths.get(script), statement);
+                }
+            }
         } catch (final Exception e) {
             throw new ServletException(e);
         }

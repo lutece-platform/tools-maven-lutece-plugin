@@ -759,7 +759,7 @@ public class RunMojo extends AbstractAssemblySiteMojo {
                 statement.execute(sql);
             } catch (final SQLException sqle) { // just eases the debugging when rewriting statements
                 if (sql.startsWith("ALTER TABLE ") && (sql.contains("ADD CONSTRAINT ") || sql.contains("ADD INDEX "))) {
-                    getLog().error("ignoring alter table for HSQLDB", sqle);
+                    getLog().debug("ignoring alter table for HSQLDB: " + sql, sqle);
                     continue;
                 }
                 throw sqle;

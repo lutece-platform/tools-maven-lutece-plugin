@@ -80,17 +80,21 @@ import java.sql.Driver;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptySet;
 import static java.util.Locale.ROOT;
+import static java.util.stream.Collectors.toList;
 import static org.apache.maven.plugins.annotations.ResolutionScope.COMPILE;
 
 /**
@@ -107,6 +111,8 @@ import static org.apache.maven.plugins.annotations.ResolutionScope.COMPILE;
 //           legacy javadoc annotations.
 @Mojo(name = "run", requiresDependencyResolution = COMPILE)
 public class RunMojo extends AbstractAssemblySiteMojo {
+    private static final Pattern HSQLDB_INT_PRECISION_DROP = Pattern.compile(" int\\([0-9]+\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern HSQLDB_SPACE_NOT_NULL_NORMALISER = Pattern.compile(" NOT NULL +", Pattern.CASE_INSENSITIVE);
     /**
      * Webapp work directory (for JSP etc).
      *
@@ -172,6 +178,15 @@ public class RunMojo extends AbstractAssemblySiteMojo {
      */
     @Parameter
     private List<String> sqlScripts;
+
+    /**
+     * Some replacement (key=token, value=replacement) for SQL scripts (mainly for plugins, defaults are already handled).
+     * It enables to execute standard SQL scripts on HSQLDB.
+     *
+     * @parameter
+     */
+    @Parameter
+    private Map<String, String> hsqldbScriptReplacements;
 
     /**
      * Custom core artifacts to use.
@@ -668,6 +683,28 @@ public class RunMojo extends AbstractAssemblySiteMojo {
             final Path base = dir.toPath();
             hsqldbStatement(base.resolve("WEB-INF/sql/create_db_lutece_core.sql"), statement);
             hsqldbStatement(base.resolve("WEB-INF/sql/init_db_lutece_core.sql"), statement);
+
+            final Path plugins = base.resolve("WEB-INF/sql/plugins");
+            try (final Stream<Path> paths = Files.walk(plugins)
+                    .filter(it -> {
+                        final String name = it.getFileName().toString();
+                        return name.startsWith("create_db_") && name.endsWith(".sql");
+                    })
+                    .sorted(Path::compareTo)) {
+                for (final Path path : new Iterable<Path>() {
+                    @Override
+                    public Iterator<Path> iterator() {
+                        return paths.iterator();
+                    }
+                }) {
+                    hsqldbStatement(path, statement);
+                    final Path init = path.getParent().resolve("create" + path.getFileName().toString().substring("init".length()));
+                    if (Files.exists(init)) {
+                        hsqldbStatement(init, statement);
+                    }
+                }
+            }
+
             if (sqlScripts != null && !sqlScripts.isEmpty()) {
                 for (final String script : sqlScripts) {
                     hsqldbStatement(Paths.get(script), statement);
@@ -679,13 +716,16 @@ public class RunMojo extends AbstractAssemblySiteMojo {
     }
 
     private void hsqldbStatement(final Path script, final Statement statement) throws SQLException, ServletException {
+        final boolean debug = getLog().isDebugEnabled();
+        if (debug) {
+            getLog().debug("Reading SQL Script '" + script + "'");
+        }
         try (final BufferedReader reader = Files.newBufferedReader(script)) {
             String line;
-            final boolean debug = getLog().isDebugEnabled();
             final StringBuilder buffer = new StringBuilder();
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("--") || line.trim().isEmpty()) {
-                    if (buffer.length() > 0) {
+                    if (buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == ';') {
                         doExecuteHSQLDB(statement, buffer.toString(), debug);
                         buffer.setLength(0);
                     }
@@ -710,31 +750,78 @@ public class RunMojo extends AbstractAssemblySiteMojo {
     }
 
     private void doExecuteHSQLDB(final Statement statement, final String line, final boolean debug) throws SQLException {
+        final String rewritten = rewriteHSQLDBStatement(line);
         if (debug) {
-            getLog().debug("Executing " + line);
+            getLog().debug("Executing\n  " + line + "\nrewritten as\n  " + rewritten);
         }
-        statement.execute(rewriteHSQLDBStatement(line));
+        for (final String sql : explodeStatementIfNeeded(rewritten, 0).collect(toList())) {
+            try {
+                statement.execute(sql);
+            } catch (final SQLException sqle) { // just eases the debugging when rewriting statements
+                if (sql.startsWith("ALTER TABLE ") && (sql.contains("ADD CONSTRAINT ") || sql.contains("ADD INDEX "))) {
+                    getLog().error("ignoring alter table for HSQLDB", sqle);
+                    continue;
+                }
+                throw sqle;
+            }
+        }
+    }
+
+    private Stream<String> explodeStatementIfNeeded(final String sql, final int idx) {
+        final String lc = sql.toLowerCase(ROOT);
+        final int start = lc.lastIndexOf("index (");
+        if (start < 0) {
+            return Stream.of(sql);
+        }
+        final int end = lc.indexOf(")", start);
+        if (end < 0) { // wrongly formatted, will fail at execution
+            return Stream.of(sql);
+        }
+        final String table = sql.substring("create table ".length(), sql.indexOf("(")).trim();
+        final String createTableSql = sql.substring(0, lc.lastIndexOf(',', start)) + ");";
+        final String createIndexSql = "CREATE INDEX idx_" + table + "_" + idx + " ON " + table +
+                " (" + sql.substring(start + "INDEX (".length(), end) + ")";
+        return Stream.concat(explodeStatementIfNeeded(createTableSql, idx + 1), Stream.of(createIndexSql));
     }
 
     private String rewriteHSQLDBStatement(final String line) {
-        final String testable = line.toLowerCase(ROOT)
-                .replace("  ", " "); // there are some typo in some scrpits, tolerate them
-        if (testable.contains("create table")) { // if we are a DDL statement, we fix the types for HSQLDB
-            return line
-                    .replace(" AUTO_INCREMENT", " IDENTITY")
-                    .replace(" auto_increment", " IDENTITY")
-                    .replace(" LONG VARCHAR", " LONGVARCHAR")
-                    .replace(" long varchar", " LONGVARCHAR")
-                    .replace(" LONG VARBINARY", " LONGVARBINARY")
-                    .replace(" long varbinary", " LONGVARBINARY")
-                    .replace(" LONG ", " BIGINT ")
-                    .replace(" long ", " BIGINT ");
+        final String lc = line.toLowerCase(ROOT)
+                .replace("  ", " "); // there are some typo in some scripts, tolerate them
+        if (lc.contains("create table")) { // if we are a DDL statement, we fix the types for HSQLDB
+            return hsqldbReplacements(HSQLDB_INT_PRECISION_DROP.matcher(
+                    HSQLDB_SPACE_NOT_NULL_NORMALISER.matcher(line)
+                            .replaceAll(" NOT NULL ")
+                            // replace is faster than a case insensitive regex
+                            .replace(" AUTO_INCREMENT", " IDENTITY")
+                            .replace(" auto_increment", " IDENTITY")
+                            .replace(" LONG VARCHAR", " LONGVARCHAR")
+                            .replace(" long varchar", " LONGVARCHAR")
+                            .replace(" LONG VARBINARY", " LONGVARBINARY")
+                            .replace(" long varbinary", " LONGVARBINARY")
+                            .replace(" LONG ", " BIGINT ")
+                            .replace(" long ", " BIGINT ")
+                            .replace(" NOT NULL DEFAULT ", " DEFAULT ")
+                            .replace(" NOT NULL default ", " DEFAULT ")
+                            .replace(" not null default ", " DEFAULT ")
+                            .replace(" DEFAULT NULL", "")
+                            .replace(" default NULL", "")
+                            .replace(" default null", ""))
+                    .replaceAll(" int"));
         }
-        if (testable.startsWith("insert into")) {
-            return replaceHSQLDBBinaryValue(line, testable)
-                    .replace("\\'", "''");
+        if (lc.startsWith("insert into")) {
+            return hsqldbReplacements(replaceHSQLDBBinaryValue(line, lc)
+                    .replace("\\'", "''"));
         }
         return line;
+    }
+
+    private String hsqldbReplacements(String replaced) {
+        if (hsqldbScriptReplacements != null) {
+            for (final Map.Entry<String, String> entry : hsqldbScriptReplacements.entrySet()) {
+                replaced = replaced.replace(entry.getKey(), entry.getValue());
+            }
+        }
+        return replaced;
     }
 
     private String replaceHSQLDBBinaryValue(final String fallback, final String testable) {

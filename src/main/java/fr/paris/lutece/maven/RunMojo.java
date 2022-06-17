@@ -59,6 +59,7 @@ import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.tomcat.util.descriptor.web.WebXml;
 import org.apache.tomcat.util.modeler.Registry;
 import org.apache.tomcat.util.scan.StandardJarScanFilter;
 import org.apache.tomcat.util.scan.StandardJarScanner;
@@ -128,6 +129,14 @@ public class RunMojo extends AbstractAssemblySiteMojo {
      */
     @Parameter(property = "lutece.run.useWar", defaultValue = "false")
     private boolean useWar;
+
+    /**
+     * Enables a faster startup but ensure to disable that if you use servlet web annotation scanning ({@code @WebXXX}).
+     *
+     * @parameter expression="${lutece.run.skipWebAnnotationScanning}" default-value="true"
+     */
+    @Parameter(property = "lutece.run.skipWebAnnotationScanning", defaultValue = "true")
+    private boolean skipWebAnnotationScanning;
 
     /**
      * Should HSQLDB be used instead of MySQL.
@@ -332,7 +341,15 @@ public class RunMojo extends AbstractAssemblySiteMojo {
             ctx.setParentClassLoader(getClass().getClassLoader());
             ctx.setDocBase(dir.getAbsolutePath());
             ctx.setFailCtxIfServletStartFails(true);
-            ctx.addLifecycleListener(new ContextConfig());
+            ctx.addLifecycleListener(new ContextConfig() {
+                @Override
+                protected void processClasses(final WebXml webXml, final Set<WebXml> orderedFragments) {
+                    if (skipWebAnnotationScanning) {
+                        return;
+                    }
+                    super.processClasses(webXml, orderedFragments);
+                }
+            });
             ctx.addServletContainerInitializer(new JasperInitializer(), emptySet());
             ctx.addServletContainerInitializer((set, servletContext) -> { // replaces default web.xml
                 final ServletRegistration.Dynamic def = servletContext.addServlet("default", DefaultServlet.class);

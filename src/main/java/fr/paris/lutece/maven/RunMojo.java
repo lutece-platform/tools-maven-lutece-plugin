@@ -71,6 +71,8 @@ import java.io.BufferedReader;
 import java.io.CharArrayWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -198,6 +200,15 @@ public class RunMojo extends AbstractAssemblySiteMojo {
     private Map<String, String> hsqldbScriptReplacements;
 
     /**
+     * Database configuration ({@code conf/db.properties}).
+     * It overwrites the existing configuration entries.
+     *
+     * @parameter
+     */
+    @Parameter
+    private Map<String, String> dbProperties;
+
+    /**
      * Custom core artifacts to use.
      *
      * @parameter
@@ -259,6 +270,21 @@ public class RunMojo extends AbstractAssemblySiteMojo {
         final File explodedDir = super.prepare();
         if (useHSQLDB) {
             setupHSQLDB(explodedDir);
+        }
+        if (dbProperties != null && !dbProperties.isEmpty()) {
+            final Path db = explodedDir.toPath().resolve("WEB-INF/conf/db.properties");
+            final Properties properties = new Properties();
+            try {
+                try (final Reader in = Files.newBufferedReader(db)) {
+                    properties.load(in);
+                }
+                dbProperties.forEach(properties::setProperty);
+                try (final Writer out = Files.newBufferedWriter(db)) {
+                    properties.store(out, "");
+                }
+            } catch (final IOException ioe) {
+                throw new MojoExecutionException(ioe.getMessage(), ioe);
+            }
         }
         PluginDataService.generatePluginsDataFile(explodedDir.getAbsolutePath());
         return explodedDir;
@@ -806,23 +832,23 @@ public class RunMojo extends AbstractAssemblySiteMojo {
                 .replace("  ", " "); // there are some typo in some scripts, tolerate them
         if (lc.contains("create table")) { // if we are a DDL statement, we fix the types for HSQLDB
             return hsqldbReplacements(HSQLDB_INT_PRECISION_DROP.matcher(
-                    HSQLDB_SPACE_NOT_NULL_NORMALISER.matcher(line)
-                            .replaceAll(" NOT NULL ")
-                            // replace is faster than a case insensitive regex
-                            .replace(" AUTO_INCREMENT", " IDENTITY")
-                            .replace(" auto_increment", " IDENTITY")
-                            .replace(" LONG VARCHAR", " LONGVARCHAR")
-                            .replace(" long varchar", " LONGVARCHAR")
-                            .replace(" LONG VARBINARY", " LONGVARBINARY")
-                            .replace(" long varbinary", " LONGVARBINARY")
-                            .replace(" LONG ", " BIGINT ")
-                            .replace(" long ", " BIGINT ")
-                            .replace(" NOT NULL DEFAULT ", " DEFAULT ")
-                            .replace(" NOT NULL default ", " DEFAULT ")
-                            .replace(" not null default ", " DEFAULT ")
-                            .replace(" DEFAULT NULL", "")
-                            .replace(" default NULL", "")
-                            .replace(" default null", ""))
+                            HSQLDB_SPACE_NOT_NULL_NORMALISER.matcher(line)
+                                    .replaceAll(" NOT NULL ")
+                                    // replace is faster than a case insensitive regex
+                                    .replace(" AUTO_INCREMENT", " IDENTITY")
+                                    .replace(" auto_increment", " IDENTITY")
+                                    .replace(" LONG VARCHAR", " LONGVARCHAR")
+                                    .replace(" long varchar", " LONGVARCHAR")
+                                    .replace(" LONG VARBINARY", " LONGVARBINARY")
+                                    .replace(" long varbinary", " LONGVARBINARY")
+                                    .replace(" LONG ", " BIGINT ")
+                                    .replace(" long ", " BIGINT ")
+                                    .replace(" NOT NULL DEFAULT ", " DEFAULT ")
+                                    .replace(" NOT NULL default ", " DEFAULT ")
+                                    .replace(" not null default ", " DEFAULT ")
+                                    .replace(" DEFAULT NULL", "")
+                                    .replace(" default NULL", "")
+                                    .replace(" default null", ""))
                     .replaceAll(" int"));
         }
         if (lc.startsWith("insert into")) {

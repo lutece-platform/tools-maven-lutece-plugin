@@ -73,7 +73,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  *
  * @goal exploded
  * @execute phase="process-classes"
- * @requiresDependencyResolution compile
+ * @requiresDependencyResolution compile+runtime
  */
 
 @Mojo( name = "exploded" )

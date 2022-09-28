@@ -59,7 +59,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  *
  * @goal site-assembly
  * @execute phase="process-resources"
- * @requiresDependencyResolution compile
+ * @requiresDependencyResolution compile+runtime
  */
 
 @Mojo( name = "site-assembly" )

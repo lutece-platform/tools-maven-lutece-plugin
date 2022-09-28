@@ -43,7 +43,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  *
  * @goal inplace
  * @execute phase="process-classes"
- * @requiresDependencyResolution compile
+ * @requiresDependencyResolution compile+runtime
  */
 
 @Mojo( name = "inplace" )

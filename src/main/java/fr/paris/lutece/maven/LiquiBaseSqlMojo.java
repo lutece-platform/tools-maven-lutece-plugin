@@ -36,7 +36,6 @@ package fr.paris.lutece.maven;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,8 +47,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -66,11 +63,9 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.create.index.CreateIndex;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.truncate.Truncate;
-import net.sf.jsqlparser.statement.update.Update;
 
 /**
  * Tags SQL resources with liquibase tags.
@@ -94,8 +89,6 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     private static final String TARGET_DIRECTORY = "./target/liquibasesql/";
     private static final String LIQUIBASE_DIRECTORY = "./src/liquibasesql/";
 
-    private static final Logger LOGGER = LogManager.getLogger(LiquiBaseSqlMojo.class);
-
     @Parameter(property = "inTarget")
     private boolean inTarget;
 
@@ -106,7 +99,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             processSqlFiles();
         } catch (IOException e)
         {
-            LOGGER.error("An error occurred while processing SQL files.", e);
+            getLog().error("An error occurred while processing SQL files.", e);
             throw new MojoExecutionException("Failed to process SQL files.", e);
         }
     }
@@ -189,7 +182,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
                     }
                     if (!done)
                     {
-                        LOGGER.info("Could not generate liquibase comment from content : \n{}", content);
+                        getLog().debug("Could not generate liquibase comment from content : \n" + content);
                         error = ". " + statements.size() + " statements analyzed.";
                     }
                 } else
@@ -202,11 +195,11 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
                 writeToFile(result.toString(), outputPath);
             } else
             {
-                LOGGER.info("File already in Liquibase format, ignoring: {}", path.getFileName());
+                getLog().debug("File already in Liquibase format, ignoring: " + path.getFileName());
             }
         } catch (Exception e)
         {
-            LOGGER.error("Error processing file: {}", path.getFileName(), e);
+            getLog().error("Error processing file: " + path.getFileName(), e);
             throw new RuntimeException(e);
         }
     }
@@ -229,7 +222,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             }
         } catch (Exception e)
         {
-            LOGGER.error("Error extracting plugin name from path: {}", path.getFileName(), e);
+            getLog().error("Error extracting plugin name from path: " + path.getFileName(), e);
             return null;
         }
     }
@@ -301,7 +294,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             Files.createDirectories(outputPath.getParent());
         } catch (IOException e)
         {
-            LOGGER.error("Error creating output directories: {}", outputPath.getParent(), e);
+            getLog().error("Error creating output directories: " + outputPath.getParent(), e);
         }
         return outputPath;
     }
@@ -313,7 +306,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             writer.write(content);
         } catch (IOException e)
         {
-            LOGGER.error("Error writing to file: {}", outputPath.getFileName(), e);
+            getLog().error("Error writing to file: " + outputPath.getFileName(), e);
         }
     }
 
@@ -443,8 +436,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         } else
         {
             // Handle other types of statements or return null if not supported
-            if (!(stmt instanceof Update) && !(stmt instanceof Delete))
-                LOGGER.error("Unsupported SQL statement in file {}: {}", path.getFileName(), stmt);
+            getLog().debug("Unsupported SQL statement in file " + path.getFileName() + " :  " + stmt);
             return null;
         }
     }

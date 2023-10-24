@@ -33,26 +33,11 @@
  */
 package fr.paris.lutece.maven;
 
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.Statements;
-import net.sf.jsqlparser.statement.alter.Alter;
-import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.drop.Drop;
-import net.sf.jsqlparser.statement.insert.Insert;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,17 +46,36 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+
+import com.google.common.base.Charsets;
+
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+import net.sf.jsqlparser.statement.create.index.CreateIndex;
+import net.sf.jsqlparser.statement.create.table.CreateTable;
+import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.drop.Drop;
+import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.truncate.Truncate;
+import net.sf.jsqlparser.statement.update.Update;
+
 /**
- * Builds a site's final WAR from a Lutece core artifact and a set of Lutece
- * plugin artifacts.<br/> Note that the Lutece dependencies (core and plugins)
- * will only be updated the first time the WAR is created. Subsequent calls to
- * this goal will only update the site's specific files.<br/> If you wish to
- * force webapp re-creation (for instance, if you changed the version of a
- * dependency), call the <code>clean</code> phase before this goal.
- *
+ * Tags SQL resources with liquibase tags.
+ * 
+ * 
  * @goal liquibase-sql
  * @execute phase="process-resources"
  * @requiresDependencyResolution compile+runtime
@@ -81,300 +85,309 @@ import java.util.stream.Stream;
 
 public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo {
 
-    private static final String LIQUIBASE_SQL_HEADER = "-- liquibase formatted sql";
-    private static final String EOL = System.lineSeparator();
-    private static final String SQL_DIRECTORY = "./src/sql";
-    private static final String TARGET_DIRECTORY = "./target/liquibasesql/";
-    private static final String LIQUIBASE_DIRECTORY = "./src/liquibasesql/";
+	private static final String CORE = "core";
+	private static final String SQL_EXT = ".sql";
+	private static final String LIQUIBASE_SQL_HEADER = "--liquibase formatted sql";
+	private static final String EOL = System.lineSeparator();
+	private static final String SQL_DIRECTORY = "./src/sql";
+	private static final String TARGET_DIRECTORY = "./target/liquibasesql/";
+	private static final String LIQUIBASE_DIRECTORY = "./src/liquibasesql/";
 
-    private static final Logger LOGGER = LogManager.getLogger(LiquiBaseSqlMojo.class);
+	private static final Logger LOGGER = LogManager.getLogger(LiquiBaseSqlMojo.class);
 
-    @Parameter(property = "inTarget")
-    private boolean inTarget;
+	@Parameter(property = "inTarget")
+	private boolean inTarget;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        try {
-            processSqlFiles();
-        } catch (IOException e) {
-            LOGGER.error("An error occurred while processing SQL files.", e);
-            throw new MojoExecutionException("Failed to process SQL files.", e);
-        }
-    }
+	public void execute() throws MojoExecutionException, MojoFailureException {
+		try {
+			processSqlFiles();
+		} catch (IOException e) {
+			LOGGER.error("An error occurred while processing SQL files.", e);
+			throw new MojoExecutionException("Failed to process SQL files.", e);
+		}
+	}
 
-    private void processSqlFiles() throws IOException {
-        try (Stream<Path> filePathStream = Files.walk(Paths.get(SQL_DIRECTORY))) {
-            filePathStream
-                    .filter(Files::isRegularFile)
-                    .forEach(this::transformFile);
-        }
-    }
+	private static final boolean fileFilter(Path path) {
+		try {
+			return Files.isRegularFile(path) && Files.size(path) > 0 && path.toString().toLowerCase().endsWith(SQL_EXT);
+		} catch (IOException e) {
+			return false;
+		}
+	}
 
-    private void transformFile(Path path) {
-        LOGGER.info("Processing file: {}", path.getFileName());
-        try {
-            String content = new String(Files.readAllBytes(path));
-            if (!content.startsWith(LIQUIBASE_SQL_HEADER)) {
-                StringBuffer result = new StringBuffer();
-                result.append(LIQUIBASE_SQL_HEADER).append(EOL);
-                String pluginName = extractPluginName(path);
+	private void processSqlFiles() throws IOException {
+		try (Stream<Path> filePathStream = Files.walk(Paths.get(SQL_DIRECTORY))) {
+			filePathStream.filter(LiquiBaseSqlMojo::fileFilter).forEach(this::transformFile);
+		}
+	}
 
-                Statements statements = parseStatements(content, path);
+	/**
+	 * 
+	 * @param content
+	 * @return
+	 */
+	public static boolean isTaggedWithLiquibase(String content) {
+		return content.startsWith(LIQUIBASE_SQL_HEADER);
+	}
 
-                for (Statement stmt : statements.getStatements()) {
-                    String res = analyse(pluginName, stmt, path);
-                    if (res != null) {
-                        result.append(res);
-                        break;
-                    } else {
-                        LOGGER.error("Error processing file: {}", path.getFileName());
-                        break;
-                    }
-                }
+	public static boolean isTaggedWithLiquibase(File candidate) {
+		try (BufferedReader reader = new BufferedReader(new FileReader(candidate, Charsets.UTF_8));) {
+			return isTaggedWithLiquibase(reader.readLine());
+		} catch (Exception e) {
+			// we do not care about the exact nature of the problem
+			// if we could not read it, we just do not include it
+			return false;
+		}
+	}
 
-                result.append(content);
-                Path outputPath = generateOutputPath(path);
-                writeToFile(result.toString(), outputPath);
-            } else {
-                LOGGER.info("File already in Liquibase format, ignoring: {}", path.getFileName());
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error processing file: {}", path.getFileName(), e);
-        }
-    }
+	private void transformFile(Path path) {
+		getLog().info("Processing file " + path);
+		try {
+			// we suppose that all SQL files are UTF-8.
+			// if that's not the case, we need a way to get that info for EACH input file
+			String content = Files.readString(path, Charsets.UTF_8);
+			if (!isTaggedWithLiquibase(content)) {
+				StringBuilder result = new StringBuilder();
+				result.append(LIQUIBASE_SQL_HEADER).append(EOL);
+				String pluginName = extractPluginName(path);
+				boolean done = false;
+				String error = "";
+				if (pluginName != null) {
+					List<LazyStatement> statements = parseStatements(content, path);
+					for (LazyStatement stmt : statements) {
+						try {
+							String res = analyse(pluginName, stmt, statements, path);
+							if (res != null) {
+								result.append(res);
+								done = true;
+								break;
+							}
+						} catch (Exception e) {
+							// nothing to do, proceed to next statement
+						}
+					}
+					if (!done) {
+						LOGGER.info("Could not generate liquibase comment from content : \n{}", content);
+						error = ". " + statements.size() + " statements analyzed.";
+					}
+				} else
+					error = ". No plugin name found in the path (plugins/<plugin_name>).";
+				if (!done)
+					getLog().error("No automatic processing for " + path.getFileName() + error);
 
-    private String extractPluginName(Path path) {
-        try {
-            Pattern r = Pattern.compile("plugins/([^/]+)/");
-            Matcher m = r.matcher(path.toString().replace("\\", "/"));
-            if (m.find()) {
-                return m.group(1);
-            } else {
-                LOGGER.error("No plugin name found in the path (plugins/<plugin_name>), skipping file.");
-                return null;
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error extracting plugin name from path: {}", path.getFileName(), e);
-            return null;
-        }
-    }
+				result.append(content);
+				Path outputPath = generateOutputPath(path);
+				writeToFile(result.toString(), outputPath);
+			} else {
+				LOGGER.info("File already in Liquibase format, ignoring: {}", path.getFileName());
+			}
+		} catch (Exception e) {
+			LOGGER.error("Error processing file: {}", path.getFileName(), e);
+			throw new RuntimeException(e);
+		}
+	}
 
-    private Statements parseStatements(String content, Path path) {
-      /*  try {
-            return CCJSqlParserUtil.parseStatements(content);
-        } catch (JSQLParserException e) {
-            LOGGER.error("Error parsing SQL statements: {}", e.getMessage());
-            return new Statements();
-        }*/
+	private String extractPluginName(Path path) {
+		try {
+			Pattern r = Pattern.compile("plugins/([^/]+)/");
+			Matcher m = r.matcher(path.toString().replace("\\", "/"));
+			if (m.find()) {
+				return m.group(1);
+			} else if (path.toString().contains(CORE)) {
+				return CORE;
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			LOGGER.error("Error extracting plugin name from path: {}", path.getFileName(), e);
+			return null;
+		}
+	}
 
-        String[] individualStatements = content.split(";");
-        Statements statements = new Statements();
-        for (String individualStatement : individualStatements) {
-            try {
-                Statement stmt = CCJSqlParserUtil.parse(individualStatement);
-                statements.addStatements(stmt);
+	// clean up extra CR and comments
+	private static final String cleanup(String statement) {
+		statement = statement.trim();
+		while (!statement.isEmpty()) {
+			if (statement.charAt(0) == '-') {
+				int eol = statement.indexOf('\n');
+				if (eol != -1)
+					statement = statement.substring(eol + 1).trim();
+				else
+					return "";
+			} else
+				break;
+		}
+		return statement;
+	}
 
-            } catch (JSQLParserException e) {
-                // Handle parsing exceptions here
-                System.err.println("Error parsing SQL statement in file : " + path.getFileName() + " " + e.getMessage());
-            }
-        }
-        return statements;
-    }
+	private List<LazyStatement> parseStatements(String content, Path path) {
+		// we pre-split a whole file in statements, we avoid ";'" as it probably
+		// means that we would be splitting on a literal ';' inside a query
+		String[] individualStatements = content.split(";[^']");
+		List<LazyStatement> statements = new ArrayList<>();
+		for (String individualStatement : individualStatements) {
+			individualStatement = cleanup(individualStatement);
+			if (individualStatement.isEmpty())
+				continue;
+			statements.add(new LazyStatement(individualStatement));
+		}
+		return statements;
+	}
 
-    private Path generateOutputPath(Path inputPath) {
-        String subPathSqlFile = inTarget ?
-                TARGET_DIRECTORY + inputPath.subpath(3, inputPath.getNameCount()) :
-                LIQUIBASE_DIRECTORY + inputPath.subpath(3, inputPath.getNameCount());
+	/**
+	 * Holder for lazy evaluation of statements : no need to actually parse the whole SQL file from the start, so each statement will be parsed only when needed
+	 */
+	static class LazyStatement {
+		private Statement s = null;
+		private final String sql;
 
-        Path outputPath = Paths.get(subPathSqlFile);
-        try {
-            Files.createDirectories(outputPath.getParent());
-        } catch (IOException e) {
-            LOGGER.error("Error creating output directories: {}", outputPath.getParent(), e);
-        }
-        return outputPath;
-    }
+		public LazyStatement(String sql) {
+			this.sql = sql;
+		}
 
-    private void writeToFile(String content, Path outputPath) {
-        try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
-            writer.write(content);
-        } catch (IOException e) {
-            LOGGER.error("Error writing to file: {}", outputPath.getFileName(), e);
-        }
-    }
+		public Statement get() throws JSQLParserException {
+			if (s == null)
+				s = CCJSqlParserUtil.parse(sql);
+			return s;
+		}
+	}
 
-    private String analyse(String pluginName, Statement stmt, Path path) {
-        if (stmt instanceof Alter) {
+	private Path generateOutputPath(Path inputPath) {
+		String subPathSqlFile = inTarget ? TARGET_DIRECTORY + inputPath.subpath(3, inputPath.getNameCount())
+				: LIQUIBASE_DIRECTORY + inputPath.subpath(3, inputPath.getNameCount());
 
-            final StringBuffer alter = new StringBuffer();
-            String tableName = ((Alter) stmt).getTable().getName();
-            ((Alter) stmt).getAlterExpressions().stream().filter((elt) -> elt.getOperation().name().equals("ADD") || elt.getOperation().name().equals("DROP")).findFirst().ifPresent(alterTest -> {
-                if (alterTest != null) {
-                    if (alterTest.getOperation().name().equals("ADD")) {
-                        alterTest.getColDataTypeList().stream().findFirst().ifPresent(col -> {
-                            alter.append(
-                                    "-- changeset forms:alter-table-" + tableName + "-" + col.getColumnName() + EOL +
-                                            "-- preconditions onFail:MARK_RAN onError:WARN" + EOL +
-                                            "-- precondition-sql-check expectedResult:0 SELECT 1 FROM " + tableName + " having count(" + col.getColumnName() + ")>=0" + EOL);
-                            // cette précondition vérifie que la colonne spécifiée n'existe pas dans la table spécifiée
-                        });
-                    }
+		Path outputPath = Paths.get(subPathSqlFile);
+		try {
+			Files.createDirectories(outputPath.getParent());
+		} catch (IOException e) {
+			LOGGER.error("Error creating output directories: {}", outputPath.getParent(), e);
+		}
+		return outputPath;
+	}
 
-                    if (alterTest.getOperation().name().equals("DROP")) {
-                        alterTest.getColDataTypeList().stream().findFirst().ifPresent(col -> {
-                            alter.append(
-                                    "-- changeset <forms:alter-table-drop-" + tableName + "-" + col.getColumnName() + EOL +
-                                            "-- preconditions onFail:MARK_RAN onError:WARN" + EOL +
-                                            "-- precondition-sql-check expectedResult:1 SELECT COUNT(*) FROM information_schema.columns WHERE table_name = '" + tableName + "' AND column_name = '" + col.getColumnName() + "'" + EOL);
-                            // cette précondition vérifie qu'il existe la colonne spécifiée dans la table spécifiée
-                        });
-                    }
-                }
-            });
+	private void writeToFile(String content, Path outputPath) {
+		try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
+			writer.write(content);
+		} catch (IOException e) {
+			LOGGER.error("Error writing to file: {}", outputPath.getFileName(), e);
+		}
+	}
 
-            return alter.toString();
+	private String analyse(String pluginName, LazyStatement stm, List<LazyStatement> statements, Path path) throws JSQLParserException {
+		Statement stmt = stm.get();
+		if (stmt instanceof Alter) {
+			final StringBuilder alter = new StringBuilder();
+			String tableName = ((Alter) stmt).getTable().getName();
+			((Alter) stmt).getAlterExpressions().stream().filter((elt) -> elt.getOperation().name().equals("ADD") || elt.getOperation().name().equals("DROP"))
+					.findFirst().ifPresent(alterTest -> {
+						if (alterTest != null) {
+							if (alterTest.getOperation().name().equals("ADD")) {
+								alterTest.getColDataTypeList().stream().findFirst().ifPresent(col -> {
+									alter.append(liquibaseComments(path, pluginName, "0",
+											"SELECT 1 FROM " + tableName + " having count(" + col.getColumnName() + ")>=0"));
+									// check that the column does not exist in the table
+								});
+							}
 
-        } else if (stmt instanceof CreateTable) {
+							if (alterTest.getOperation().name().equals("DROP")) {
+								alter.append(liquibaseComments(path, pluginName, "1", "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = '"
+										+ tableName + "' AND column_name = '" + alterTest.getColumnName() + "'"));
+								// check that the column exists in the table
+							}
+						}
+					});
 
-            String tableName = ((CreateTable) stmt).getTable().getName();
-            return (
-                    "-- changeset forms:create-table-" + tableName + EOL +
-                            //"-- changeset "+pluginName+":create-table-"+tableName+EOL+
-                            "-- preconditions onFail:MARK_RAN onError:WARN" + EOL +
-                            "-- precondition-sql-check expectedResult:0 SELECT 1 FROM " + tableName + " limit 1" + EOL
-                    // cette précondition vérifie que la table spécifiée n'existe pas
-            );
+			return alter.toString();
 
-        } else if (stmt instanceof Drop) {
+		} else if (stmt instanceof CreateTable) {
+			String tableName = ((CreateTable) stmt).getTable().getName();
+			return liquibaseComments(path, pluginName, "0", "SELECT 1 FROM " + tableName + " limit 1");
+		} else if (stmt instanceof Drop) {
+			String tableName = ((Drop) stmt).getName().getName();
 
-            final StringBuffer drop = new StringBuffer();
-            Table tableName = ((Drop) stmt).getName();
-            String tableName2 = tableName.toString();
+			boolean hasCreate = false;
 
-            List<String> stmts = allStatements(path);
-            List<Statement> statements = convertToStmts(stmts);
+			for (LazyStatement ls : statements) {
+				Statement nextStmt = ls.get();
+				if (nextStmt instanceof CreateTable) {
+					String testTableName = ((CreateTable) nextStmt).getTable().getName();
+					if (testTableName.equals(tableName)) {
+						hasCreate = true;
+						break;
+						// teste s'il y a un CREATE d'une table du même nom que celle qu'on veut DROP
+					}
+				}
+			}
 
-            boolean hasCreate = false;
+			if (hasCreate) {
+				return liquibaseComments(path, pluginName, "0", "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '" + tableName + "'");
+				// cette précondition vérifie que la table spécifiée n'existe pas
+			} else {
+				return liquibaseComments(path, pluginName, "1", "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '" + tableName + "'");
+			}
+		} else if (stmt instanceof Insert) {
+			Insert ins = (Insert) stmt;
+			final StringBuilder insert = new StringBuilder();
+			String tableName = ins.getTable().getName();
 
-            for (int i = 0; i < statements.size(); i++) {
-                Statement nextStmt = statements.get(i);
-                if (nextStmt instanceof CreateTable) {
-                    String testTableName = ((CreateTable) nextStmt).getTable().getName();
-                    if (testTableName.equals(tableName2)) {
-                        hasCreate = true;
-                        break;
-                        // teste s'il y a un CREATE d'une table du même nom que celle qu'on veut DROP
-                    }
-                }
-            }
+			insert.append("-- changeset " + pluginName + ":insert-" + tableName + EOL + "-- preconditions onFail:MARK_RAN onError:WARN" + EOL);
 
-            if (hasCreate) {
-                drop.append(
-                        "-- changeset forms:create-table-" + tableName + EOL +
-                                //"-- changeset "+pluginName+":create-table-"+tableName+EOL+
-                                "-- preconditions onFail:MARK_RAN onError:WARN" + EOL +
-                                "-- precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '" + tableName + "'" + EOL
-                        // cette précondition vérifie que la table spécifiée n'existe pas
-                );
-            } else {
-                drop.append(
-                        "-- changeset forms:drop-table-" + tableName + EOL +
-                                //"-- changeset "+pluginName+":drop-table-"+tableName+EOL+
-                                "-- preconditions onFail:MARK_RAN onError:WARN" + EOL +
-                                "-- precondition-sql-check expectedResult:1 SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '" + tableName + "'" + EOL
-                        // cette précondition vérifie que la table spécifiée existe
-                );
-            }
+			// cas de certains fichiers sql ou il est impossible de récuperer la liste des
+			// valeurs en raison du non respect des standars sql
+			if ((ins.getItemsList()) != null) {
 
-            return drop.toString();
+				List<Column> columns = ins.getColumns();
+				List<Expression> values = ((ExpressionList) ins.getItemsList()).getExpressions();
+				// cannot make a where clause if we do not known the column names (optional in inserts)
+				if (columns != null && values != null && columns.size() == values.size()) {
 
-        } else if (stmt instanceof Insert) {
+					insert.append("-- precondition-sql-check expectedResult:0 SELECT 1 FROM " + tableName + " WHERE ");
+					// Ajout de la condition "column = value" pour chaque :
+					for (int i = 0; i < columns.size(); i++) {
+						Column column = columns.get(i);
+						String columnName = column.getColumnName();
+						String value = values.get(i).toString();
 
-            final StringBuilder insert = new StringBuilder();
-            String tableName = ((Insert) stmt).getTable().getName();
+						insert.append(columnName + " = " + value);
 
-            insert.append(
-                    "-- changeset " + pluginName + ":insert-" + tableName + EOL +
-                            "-- preconditions onFail:MARK_RAN onError:WARN" + EOL
-            );
+						if (i < columns.size() - 1) {
+							insert.append(" AND ");
+						}
+					}
 
-            // cas de certains fichiers sql ou il est impossible de récuperer la liste des valeurs en raison du non respect des standars sql
-            if ( (((Insert) stmt).getItemsList()) != null ){
+					insert.append(EOL);
+					// cette précondition vérifie que l'insert n'a pas déjà été réalisé
 
-            List<Column> columns = ((Insert) stmt).getColumns();
-            List<Expression> values = ((ExpressionList) ((Insert) stmt).getItemsList()).getExpressions();
+					return insert.toString();
+				}
+			}
+			return null;
+		} else if (stmt instanceof CreateIndex) {
+			final CreateIndex cr = (CreateIndex) stmt;
+			final String index = cr.getIndex().getName();
+			final String tableName = cr.getTable().getName();
+			return liquibaseComments(path, pluginName, "1",
+					"SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE INDEX_NAME='" + index + "' AND TABLE_NAME='" + tableName + "' LIMIT 1;");
+		} else if (stmt instanceof Truncate) {
+			// FIXME the pre-condition might return 0
+			// even if truncate wasn't run, for example if the table was already empty...
+			// same problem for DELETE/UPDATE, which might be no-ops too.
+			final Truncate tr = (Truncate) stmt;
+			final String tableName = tr.getTable().getName();
+			return liquibaseComments(path, pluginName, "1", "SELECT 1 FROM " + tableName + " LIMIT 1;");
+		} else {
+			// Handle other types of statements or return null if not supported
+			if (!(stmt instanceof Update) && !(stmt instanceof Delete))
+				LOGGER.error("Unsupported SQL statement in file {}: {}", path.getFileName(), stmt);
+			return null;
+		}
+	}
 
-            insert.append("-- precondition-sql-check expectedResult:0 SELECT 1 FROM " + tableName + " WHERE ");
-            // Ajout de la condition "column = value" pour chaque :
-            for (int i = 0; i < columns.size(); i++) {
-                Column column = columns.get(i);
-                String columnName = column.getColumnName();
-                String value = values.get(i).toString();
-
-                insert.append(columnName + " = " + value);
-
-                if (i < columns.size() - 1) {
-                    insert.append(" AND ");
-                }
-            }
-        }
-
-            insert.append(EOL);
-            // cette précondition vérifie que l'insert n'a pas déjà été réalisé
-
-            return insert.toString();
-
-        } else {
-            // Handle other types of statements or return null if not supported
-            LOGGER.warn("Unsupported SQL statement in file {}: {}", path.getFileName(), stmt);
-            return null;
-        }
-    }
-
-    private static List<String> allStatements(Path path) {
-
-        Stream<String> stream = null;
-        String resultat = null;
-        List<String> allStmt = new ArrayList<>();
-        try {
-            stream = Files.lines(path);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (stream != null) {
-            resultat = stream.filter(str -> str.length() > 1)
-                    .peek(System.out::println)
-                    .collect(Collectors.joining());
-
-            //tream.forEach(System.out::println);
-        }
-
-        //String content = Files.readString(path);
-        if (resultat != null) {
-            String[] statementArray = resultat.split(";");
-            for (String stmt : statementArray) {
-                stmt = stmt.trim();
-                if (!stmt.isEmpty()) {
-                    // pour éviter d'ajouter des éléments vides à la liste
-                    allStmt.add(stmt);
-                }
-            }
-        }
-        return allStmt;
-        // permet d'obtenir une List<String> de tous les statements
-    }
-
-    private static List<Statement> convertToStmts(List<String> stmts) {
-        List<Statement> statements = new ArrayList<>();
-        try {
-            for (String stmt : stmts) {
-                Statement statement = CCJSqlParserUtil.parse(stmt);
-                statements.add(statement);
-            }
-        } catch (JSQLParserException e) {
-            e.printStackTrace();
-        }
-        return statements;
-        // transforme une List<String> en List<Statement>
-    }
+	private static String liquibaseComments(Path path, String pluginName, String expectedResult, String sqlCheck) {
+		final StringBuilder sb = new StringBuilder();
+		sb.append("--changeset ").append(pluginName).append(":").append(path.getFileName()).append(EOL);
+		sb.append("--preconditions onFail:MARK_RAN onError:WARN").append(EOL);
+		sb.append("--precondition-sql-check expectedResult:").append(expectedResult).append(" ").append(sqlCheck).append(EOL);
+		return sb.toString();
+	}
 }

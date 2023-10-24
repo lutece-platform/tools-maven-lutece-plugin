@@ -39,12 +39,20 @@ import org.codehaus.plexus.util.IOUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.function.Function;
 
 /**
  * Utility class to manipulate files.<br>
@@ -251,6 +259,48 @@ public class FileUtils
                 throw new IOException( "Unknown file type: " + file.getAbsolutePath(  ) );
             }
         }
+    }
+
+    /**
+     * Copies an entire directory structure, with the possibility to filter files
+     *
+     * Note:
+     * <ul>
+     * <li>It will include empty directories.
+     * <li>The <code>sourceDirectory</code> must exists.
+     * </ul>
+     *
+     * @param sourceDirectory
+     *            the source directory.
+     * @param destinationDirectory
+     *            the destination directory.
+     * @param fileFilter
+     *            the file filter (true copies the file, false ignores it).
+     * @throws IOException
+     *             if an I/O exception occurs.
+     */
+    public static void copyDirectoryWithFilter( File sourceDirectory, File destinationDirectory, Function<File, Boolean> fileFilter )
+            throws IOException
+    {
+    	Path source = sourceDirectory.toPath();
+    	Path target = destinationDirectory.toPath();
+    	Files.walkFileTree(source, new SimpleFileVisitor<Path>()
+    	{
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                    throws IOException {
+                Files.createDirectories(target.resolve(source.relativize(dir).toString()));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                    throws IOException {
+            	if (fileFilter.apply(file.toFile()))
+            		Files.copy(file, target.resolve(source.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     /**

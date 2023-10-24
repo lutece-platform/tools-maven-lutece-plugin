@@ -43,6 +43,7 @@ import org.codehaus.plexus.archiver.jar.JarArchiver;
 import org.codehaus.plexus.util.StringUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -69,6 +70,8 @@ public class AssemblySiteMojo
 {
     private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
     private static final String SNAPSHOT_PATTERN = "SNAPSHOT";
+    // The path to the copy of the sql directory inside the classpath
+    private static final String WEB_INF_CLASSES_SQL_PATH = "WEB-INF/classes/sql/";
 
     /**
      * The output date format.
@@ -146,6 +149,20 @@ public class AssemblySiteMojo
         // Explode the webapp in the temporary directory
         explodeWebapp( explodedDirectory );
         explodeConfigurationFiles( explodedDirectory );
+        
+		// duplicate SQL files in target WAR classpath for liquibase
+		try
+		{
+			File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
+			File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
+			// we do not use copyDirectoryStructure since we have specific needs
+			FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir, f -> f.getName().toLowerCase().endsWith(".sql") && f.length() > 0 && LiquiBaseSqlMojo.isTaggedWithLiquibase(f));
+		} catch (IOException e)
+		{
+			// Use the same catch block for all IOExceptions, presumably the
+			// exception's message will be clear enough.
+			throw new MojoExecutionException("Error while copying resources", e);
+		}
 
         // put the timestamp in the assembly name
         if ( ArtifactUtils.isSnapshot( project.getVersion(  ) ) )

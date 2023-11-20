@@ -266,7 +266,7 @@ public class FileUtils
      *
      * Note:
      * <ul>
-     * <li>It will include empty directories.
+     * <li>It will NOT include empty directories.
      * <li>The <code>sourceDirectory</code> must exists.
      * </ul>
      *
@@ -284,20 +284,23 @@ public class FileUtils
     {
     	Path source = sourceDirectory.toPath();
     	Path target = destinationDirectory.toPath();
-    	Files.walkFileTree(source, new SimpleFileVisitor<Path>()
-    	{
+        Files.walkFileTree(source, new SimpleFileVisitor<Path>()
+        {
             @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                    throws IOException {
-                Files.createDirectories(target.resolve(source.relativize(dir).toString()));
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+            {
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                    throws IOException {
-            	if (fileFilter.apply(file.toFile()))
-            		Files.copy(file, target.resolve(source.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING);
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+            {
+                if (fileFilter.apply(file.toFile()))
+                {
+                    // parent directory is only created if needed
+                    Files.createDirectories(target.resolve(source.relativize(file.getParent()).toString()));
+                    Files.copy(file, target.resolve(source.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING);
+                }
                 return FileVisitResult.CONTINUE;
             }
         });

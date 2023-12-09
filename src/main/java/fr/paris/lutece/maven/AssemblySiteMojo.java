@@ -33,20 +33,9 @@
  */
 package fr.paris.lutece.maven;
 
-import org.apache.maven.archiver.MavenArchiveConfiguration;
-import org.apache.maven.archiver.MavenArchiver;
-import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 
-import org.codehaus.plexus.archiver.jar.JarArchiver;
-import org.codehaus.plexus.util.StringUtils;
-
-import java.io.File;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
 import org.apache.maven.plugins.annotations.Mojo;
 
 /**
@@ -65,61 +54,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo( name = "site-assembly" )
 
 public class AssemblySiteMojo
-    extends AbstractLuteceWebappMojo
+    extends AbstractAssemblySiteMojo
 {
-    private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
-    private static final String SNAPSHOT_PATTERN = "SNAPSHOT";
-
-    /**
-     * The output date format.
-     *
-     * @parameter default-value="yyyyMMdd.HHmmss"
-     * @required
-     */
-    private String utcTimestampPattern;
-
-    /**
-     * The name of the generated WAR file.
-     *
-     * @parameter expression="${project.build.finalName}"
-     * @required
-     */
-    private String finalName;
-
-    /**
-     * A temporary directory used to hold the exploded version of the webapp.
-     *
-     * @parameter expression="${project.build.directory}/${project.build.finalName}"
-     * @required
-     */
-    private File explodedDirectory;
-
-    /**
-     * Whether creating the archive should be forced.
-     *
-     * @parameter expression="${jar.forceCreation}" default-value="false"
-     */
-    private boolean forceCreation;
-
-    /**
-     * The maven archive configuration to use.
-     *
-     * See <a
-     * href="http://maven.apache.org/ref/current/maven-archiver/apidocs/org/apache/maven/archiver/MavenArchiveConfiguration.html">the
-     * Javadocs for MavenArchiveConfiguration</a>.
-     *
-     * @parameter
-     */
-    private MavenArchiveConfiguration archive = new MavenArchiveConfiguration(  );
-
-    /**
-     * The Jar archiver.
-     *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="jar"
-     * @required
-     */
-    private JarArchiver jarArchiver;
-
     /**
      * Executes the mojo on the current project.
      *
@@ -137,44 +73,6 @@ public class AssemblySiteMojo
         {
             getLog(  ).info( "Assembly-site " + project.getArtifact(  ).getType(  ) + " artifact..." );
             assemblySite(  );
-        }
-    }
-
-    private void assemblySite(  )
-                       throws MojoExecutionException
-    {
-        // Explode the webapp in the temporary directory
-        explodeWebapp( explodedDirectory );
-        explodeConfigurationFiles( explodedDirectory );
-
-        // put the timestamp in the assembly name
-        if ( ArtifactUtils.isSnapshot( project.getVersion(  ) ) )
-        {
-            DateFormat utcDateFormatter = new SimpleDateFormat( utcTimestampPattern );
-            String newVersion = utcDateFormatter.format( new Date(  ) );
-            finalName = StringUtils.replace( finalName, SNAPSHOT_PATTERN, newVersion );
-        }
-
-        // Make a war from the exploded directory
-        File warFile = new File( outputDirectory, finalName + ".war" );
-
-        MavenArchiver archiver = new MavenArchiver(  );
-        archiver.setArchiver( jarArchiver );
-        archiver.setOutputFile( warFile );
-        archive.setForced( forceCreation );
-
-        try
-        {
-            if ( explodedDirectory.exists(  ) )
-            {
-                archiver.getArchiver(  )
-                        .addDirectory( explodedDirectory, PACKAGE_WEBAPP_INCLUDES, PACKAGE_WEBAPP_RESOURCES_EXCLUDES );
-            }
-
-            archiver.createArchive( project, archive );
-        } catch ( Exception e )
-        {
-            throw new MojoExecutionException( "Error assembling WAR", e );
         }
     }
 }

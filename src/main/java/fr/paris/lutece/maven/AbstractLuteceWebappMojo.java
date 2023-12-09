@@ -90,7 +90,7 @@ public abstract class AbstractLuteceWebappMojo
      *
      * @component
      */
-    private org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
+    protected org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
 
     /**
      * The artifact resolver.

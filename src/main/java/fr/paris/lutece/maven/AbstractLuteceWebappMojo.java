@@ -49,6 +49,7 @@ import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
@@ -124,8 +125,27 @@ public abstract class AbstractLuteceWebappMojo
      * The directory where to explode the test webapp.
      *
      * @parameter expression="${testWebappDirectory}" default-value="${project.build.directory}/lutece"
+     *
      */
     protected File testWebappDirectory;
+    /**
+     * The directory where to explode the  webapp.
+     *
+     * @parameter expression="${webappDirectory}" default-value="${project.build.directory}/lutece"
+     *
+     */
+    protected File webappDirectory;
+   /**
+    * 
+    * @parameter default-value="${WEB-INF/lib/}"
+    */
+    private String outdatedCheckPath;
+    
+    /**
+     * The list of webResources we want to transfer.
+     * @parameter
+     */
+    private Resource[] webResources;
 
     /**
      * Creates an exploded webapp structure from the current project.

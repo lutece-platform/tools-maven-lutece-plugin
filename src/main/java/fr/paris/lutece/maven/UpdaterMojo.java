@@ -50,7 +50,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Assembly zips for Lutece core or plugin project.<br/> If you wish to force
@@ -58,12 +64,13 @@ import org.apache.maven.plugins.annotations.Mojo;
  * dependency), call the
  * <code>clean</code> phase before this goal.
  *
- * @goal updater
- * @execute phase="process-classes"
- * @requiresDependencyResolution compile
  */
 
-@Mojo( name = "updater" )
+@Mojo( name = "updater" ,
+requiresDependencyResolution = ResolutionScope.COMPILE
+		)
+@Execute ( goal = "updater",
+		phase=LifecyclePhase.PROCESS_CLASSES )
 public class UpdaterMojo extends AbstractLuteceWebappMojo
 {
 
@@ -72,6 +79,9 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
      *
      * @parameter expression="${versionFrom}" default-value="0.0.0"
      */
+	@Parameter(
+    		property = "versionFrom",
+            defaultValue = "0.0.0" )
     protected String strDefinedFromVersion;
 
     private static final String WEB_INF_LIB_PATH = "webapp/WEB-INF/lib/";
@@ -86,6 +96,9 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
      * @parameter expression="${basedir}"
      * @required
      */
+    @Parameter(
+    		property = "basedir",
+            required = true )
     protected File baseDirectory;
     private static final String JUNIT = "junit";
     private static final String SERVELT_API = "servlet-api";
@@ -109,12 +122,15 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
      *
      * @parameter expression="${updOutputDirectory}"
      */
+    @Parameter(
+    		property = "updOutputDirectory" )
     protected File updOutputDirectory;
     /**
      * To look up Archiver/UnArchiver implementations
      *
      * @component
      */
+    @Component
     private ArchiverManager archiverManager;
 
     /**

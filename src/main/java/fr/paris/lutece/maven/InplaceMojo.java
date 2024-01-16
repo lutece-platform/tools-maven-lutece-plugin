@@ -35,18 +35,22 @@ package fr.paris.lutece.maven;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Builds a test webapp for a Lutece core project, directly in the
  * <code>webapp</code> directory.
  *
- * @goal inplace
- * @execute phase="process-classes"
- * @requiresDependencyResolution compile+runtime
  */
 
-@Mojo( name = "inplace" )
+@Mojo( name = "inplace" ,
+requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME
+		)
+@Execute ( goal = "inplace",
+		phase=LifecyclePhase.PROCESS_CLASSES )
 public class InplaceMojo
     extends AbstractLuteceWebappMojo
 {

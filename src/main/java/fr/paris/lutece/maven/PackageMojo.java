@@ -43,7 +43,13 @@ import org.codehaus.plexus.archiver.jar.JarArchiver;
 import org.codehaus.plexus.archiver.zip.ZipArchiver;
 
 import java.io.File;
+
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Packages Lutece core or plugin projects.<br/> This mojo produces two
@@ -57,11 +63,12 @@ import org.apache.maven.plugins.annotations.Mojo;
  * invoked, you may end up with unwanted files or directories in the ZIP
  * attachement.
  *
- * @goal package
- * @requiresDependencyResolution compile
  *
  */
-@Mojo( name = "package" )
+
+@Mojo( name = "package" ,
+requiresDependencyResolution = ResolutionScope.COMPILE
+		)
 public class PackageMojo
     extends AbstractLuteceMojo
 {
@@ -71,40 +78,42 @@ public class PackageMojo
     /**
      * The name of the generated artifact.
      *
-     * @parameter expression="${project.build.finalName}"
-     * @required
      */
+    @Parameter(
+    		property = "project.build.finalName",
+            required = true )
     private String artifactName;
 
     /**
      * The source directory for webapp components.
      *
-     * @parameter expression="${basedir}/webapp"
-     * @required
      */
+    @Parameter(
+    		property = "basedir/webapp",
+            required = true )
     private File webappSourceDirectory;
 
     /**
      * Whether creating the archives should be forced.
      *
-     * @parameter expression="${jar.forceCreation}" default-value="false"
      */
+    @Parameter(
+    		property = "jar.forceCreation",
+            defaultValue = "false" )
     private boolean forceCreation;
 
     /**
      * The Jar archiver.
      *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="jar"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "jar" )
     private JarArchiver jarArchiver;
 
     /**
      * The Zip archiver.
      *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="zip"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "zip" )
     private ZipArchiver zipArchiver;
 
     /**
@@ -114,15 +123,15 @@ public class PackageMojo
      * href="http://maven.apache.org/ref/current/maven-archiver/apidocs/org/apache/maven/archiver/MavenArchiveConfiguration.html">the
      * Javadocs for MavenArchiveConfiguration</a>.
      *
-     * @parameter
      */
+    @Parameter
     private MavenArchiveConfiguration archiveCfg = new MavenArchiveConfiguration(  );
 
     /**
      * Project-helper instance, used to make addition of resources simpler.
      *
-     * @component
      */
+    @Component
     private MavenProjectHelper projectHelper;
 
     /**

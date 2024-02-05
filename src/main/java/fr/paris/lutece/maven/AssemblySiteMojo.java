@@ -72,6 +72,8 @@ public class AssemblySiteMojo
     private static final String SNAPSHOT_PATTERN = "SNAPSHOT";
     // The path to the copy of the sql directory inside the classpath
     private static final String WEB_INF_CLASSES_SQL_PATH = "WEB-INF/classes/sql/";
+    private static final String WEB_INF_DB_PROPERTIES_PATH = "WEB-INF/conf/db.properties";
+    private static final String WEB_INF_BUILD_PROPERTIES_PATH = "WEB-INF/sql/build.properties";
 
     /**
      * The output date format.
@@ -153,11 +155,18 @@ public class AssemblySiteMojo
 		// duplicate SQL files in target WAR classpath for liquibase
 		try
 		{
-			File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
-			File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
-			// we do not use copyDirectoryStructure since we have specific needs
-			FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir, f -> f.getName().toLowerCase().endsWith(".sql") && f.length() > 0 && LiquiBaseSqlMojo.isTaggedWithLiquibase(f));
-		} catch (IOException e)
+            File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
+            File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
+            // we allow explicit override of build.properties location with this system property
+            File dbProperties = new File(explodedDirectory, WEB_INF_DB_PROPERTIES_PATH);
+            File buildProperties = new File(explodedDirectory, WEB_INF_BUILD_PROPERTIES_PATH);
+            String buildPropertiesOverride = System.getProperty("liquibase.override.build.properties");
+            if (buildPropertiesOverride != null)
+                buildProperties = new File(buildPropertiesOverride);
+            SqlRegexpHelper sqlHelper = new SqlRegexpHelper(buildProperties, SqlRegexpHelper.findDbName(dbProperties));
+            // we do not use copyDirectoryStructure since we have specific needs
+            FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir, f -> f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 && LiquiBaseSqlMojo.isTaggedWithLiquibase(f), sqlHelper::filter);
+		} catch (Exception e)
 		{
 			// Use the same catch block for all IOExceptions, presumably the
 			// exception's message will be clear enough.

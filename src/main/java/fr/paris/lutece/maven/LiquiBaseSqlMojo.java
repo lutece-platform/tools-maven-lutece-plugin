@@ -36,6 +36,7 @@ package fr.paris.lutece.maven;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,7 +68,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 {
 
     private static final String CORE = "core";
-    private static final String SQL_EXT = ".sql";
+    public static final String SQL_EXT = ".sql";
     private static final String XML_EXT = ".xml";
     private static final String LIQUIBASE_SQL_HEADER = "--liquibase formatted sql";
     private static final String EOL = "\n";
@@ -84,16 +85,23 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
     // default values for core : we suppose that the version is always good
     private String pluginName = CORE, version = null;
+    // track most recent version number in update script
+    private PluginVersion mostRecentSqlScriptVersion = null;
 
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         try
         {
+            PluginVersion.setAcceptSnapshots(true);// don't fail because of snapshots
             processPluginXmls();
             processSqlFiles();
             if (!CORE.equals(pluginName))
+            {
                 getLog().info("Detected version is " + version + " for plugin " + pluginName + ". Please correct it if needed.");
-            // TODO : parse versions in update_XXX file names, compare with the version above, and inform the user that the version should be changed
+                PluginVersion pluginVersion = PluginVersion.of(version);
+                if (mostRecentSqlScriptVersion != null && mostRecentSqlScriptVersion.compareTo(pluginVersion) > 0)
+                    getLog().error("Some SQL files have version " + mostRecentSqlScriptVersion + " for plugin " + pluginName + " with version " + version);
+            }
         } catch (IOException e)
         {
             getLog().error("An error occurred while processing SQL files.", e);
@@ -179,9 +187,20 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     {
         try
         {
+            if (!CORE.equals(pluginName))
+            {
+                getLog().info("path " + path);
+                SqlPathInfo sqlPath = SqlPathInfo.parse(path.toString().substring(6));// remove leading "./src/"
+                if (!sqlPath.isCreate())
+                {
+                    if (sqlPath.getDstVersion() != null
+                            && (mostRecentSqlScriptVersion == null || mostRecentSqlScriptVersion.compareTo(sqlPath.getDstVersion()) < 0))
+                        mostRecentSqlScriptVersion = sqlPath.getDstVersion();
+                }
+            }
             // we suppose that all SQL files are UTF-8.
             // if that's not the case, we need a way to get that info for EACH input file
-            String content = Files.readString(path);
+            String content = readString(path);
             if (!isTaggedWithLiquibase(content))
             {
                 StringBuilder result = new StringBuilder();
@@ -191,7 +210,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
                 result.append(content);
                 Path outputPath = generateOutputPath(path);
                 getLog().info("Writing tag+content to file " + outputPath);
-                Files.writeString(outputPath, result.toString());
+                Files.write(outputPath, result.toString().getBytes(StandardCharsets.UTF_8));
             } else
             {
                 getLog().info("File already in Liquibase format, ignoring: " + path);
@@ -201,6 +220,14 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             getLog().error("Error processing file: " + path.getFileName(), e);
             throw new RuntimeException(e);
         }
+    }
+    /** 
+     * re-implementation of Files.readString (jdk11+), which does not exist in JDK8
+     * @throws IOException 
+     * */
+    private static String readString(Path path) throws IOException {
+        byte[] bytes = Files.readAllBytes(path);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     private Path generateOutputPath(Path inputPath) throws IOException

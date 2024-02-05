@@ -34,10 +34,11 @@
 package fr.paris.lutece.maven;
 
 import org.apache.commons.io.IOUtils;
-
+import org.apache.maven.plugin.logging.Log;
 import org.codehaus.plexus.util.IOUtil;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -51,8 +52,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Utility class to manipulate files.<br>
@@ -262,7 +265,7 @@ public class FileUtils
     }
 
     /**
-     * Copies an entire directory structure, with the possibility to filter files
+     * Copies an entire directory structure, with the possibility to filter files and lines
      *
      * Note:
      * <ul>
@@ -276,10 +279,12 @@ public class FileUtils
      *            the destination directory.
      * @param fileFilter
      *            the file filter (true copies the file, false ignores it).
+     * @param linefilter
+     *            the line filter (takes a source line and outputs a possibly modified line).
      * @throws IOException
      *             if an I/O exception occurs.
      */
-    public static void copyDirectoryWithFilter( File sourceDirectory, File destinationDirectory, Function<File, Boolean> fileFilter )
+    public static void copyDirectoryWithFilter( File sourceDirectory, File destinationDirectory, Function<File, Boolean> fileFilter, Function<String, String> linefilter)
             throws IOException
     {
     	Path source = sourceDirectory.toPath();
@@ -299,11 +304,30 @@ public class FileUtils
                 {
                     // parent directory is only created if needed
                     Files.createDirectories(target.resolve(source.relativize(file.getParent()).toString()));
-                    Files.copy(file, target.resolve(source.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING);
+                    copyFileWithLineFilter(file, target.resolve(source.relativize(file).toString()), linefilter);
                 }
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    /**
+     * Copies a file from source to destination, applying a filter for each line
+     * 
+     * @param sourceFile      the source file
+     * @param destinationFile the destination file (always written to)
+     * @throws IOException if anything goes wrong
+     */
+    public static void copyFileWithLineFilter(Path sourceFile, Path destinationFile, Function<String, String> linefilter) throws IOException
+    {
+        if (linefilter == null)
+            Files.copy(sourceFile, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+        else
+            try (Stream<String> lines = Files.lines(sourceFile); BufferedWriter writer = Files.newBufferedWriter(destinationFile))
+            {
+                for (String line : (Iterable<String>) lines::iterator)// avoid a clumsy loop with try/catch
+                    writer.append(linefilter.apply(line)).append('\n');
+            }
     }
 
     /**

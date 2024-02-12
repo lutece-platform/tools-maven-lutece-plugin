@@ -57,7 +57,7 @@ public class SqlPathInfo
             .compile("sql/plugins/(?<plugin>[\\p{Alpha}\\-]+)(/modules/(?<module>[\\p{Alpha}]+))?/(core|plugin)/(init|create)[\\p{Alpha}_\\-]+\\.sql");
     // example : "sql/plugins/testpourliquibase/upgrade/update_db_testpourliquibase-0.0.9-1.0.0.sql"
     private static final Pattern SQL_UPDATE_PATTERN = Pattern.compile(
-            "sql/plugins/(?<plugin>[\\p{Alpha}\\-]+)(/modules/(?<module>[\\p{AlPha}]+))?/upgrades?/(update|upgrade)[\\p{Alpha}\\-_]+[\\-_]?(?<srcVersion>([0-9]+(\\.[0-9]+)*))[\\-_](?<dstVersion>([0-9]+(\\.[0-9]+)*))\\.sql");
+            "sql/plugins/(?<plugin>[\\p{Alpha}\\-]+)(/modules/(?<module>[\\p{Alpha}]+))?/upgrades?/(update|upgrade)[\\p{Alpha}\\-_]+[\\-_]?(?<srcVersion>([0-9]+(\\.[0-9]+)*))[\\-_](?<dstVersion>([0-9]+(\\.[0-9]+)*))\\.sql");
 
     // matches src/sql/create_db_lutece_core.sql and src/sql/init_db_lutece_core.sql
     private static final Pattern SQL_CORE_CREATE = Pattern.compile("sql/(init|create)[\\p{Alpha}_]+(?<plugin>core)\\.sql");

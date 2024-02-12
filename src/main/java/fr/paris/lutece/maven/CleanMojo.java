@@ -62,7 +62,6 @@ import org.apache.maven.plugins.annotations.Mojo;
  * the <code>filesets</code> tag.
  * </P>
  *
- * @goal clean
  *
  * @see org.apache.maven.plugin.clean.Fileset.
  */

@@ -36,6 +36,8 @@ package fr.paris.lutece.maven;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 import org.codehaus.plexus.logging.LogEnabled;
@@ -194,26 +196,29 @@ public abstract class AbstractLuteceMojo
     /**
      * The maven project.
      *
-     * @parameter expression="${project}"
-     * @required
-     * @readonly
      */
+    @Parameter( 
+            property = "project",
+            readonly = true,
+            required = true )
     protected MavenProject project;
 
     /**
      * The directory containing the Java classes.
      *
-     * @parameter expression="${project.build.outputDirectory}"
-     * @required
      */
+    @Parameter( 
+    		property = "project.build.outputDirectory",
+            required = true )
     protected File classesDirectory;
 
     /**
      * The directory containing the default configuration files.
      *
-     * @parameter expression="${basedir}/src/conf/default"
-     * @required
      */
+    @Parameter( 
+    		property = "basedir/src/conf/default",
+            required = true )
     protected File defaultConfDirectory;
 
     /**
@@ -222,6 +227,9 @@ public abstract class AbstractLuteceMojo
      * @parameter expression="${basedir}/webapp"
      * @required
      */
+    @Parameter( 
+    		property = "basedir/webapp",
+            required = true )
     protected File webappSourceDirectory;
 
     /**
@@ -229,6 +237,8 @@ public abstract class AbstractLuteceMojo
      *
      * @parameter expression="${basedir}/src/sql"
      */
+    @Parameter( 
+            property = "basedir/src/sql" )
     protected File sqlDirectory;
 
     /**
@@ -236,22 +246,26 @@ public abstract class AbstractLuteceMojo
      *
      * @parameter expression="${basedir}/src/site"
      */
+    @Parameter( 
+    		property = "basedir/src/site" )
     protected File siteDirectory;
 
     /**
      * The project's output directory
      *
-     * @parameter expression="${project.build.directory}"
-     * @required
      */
+    @Parameter( 
+    		property = "project.build.directory",
+            required = true )
     protected File outputDirectory;
 
     /**
      * The projects in the reactor for aggregation report.
      *
-     * @parameter expression="${reactorProjects}"
-     * @readonly
      */
+    @Parameter( 
+    		property = "reactorProjects",
+            readonly = true)
     protected List<MavenProject> reactorProjects;
 
     /**
@@ -259,6 +273,7 @@ public abstract class AbstractLuteceMojo
     *
     * @component
     */
+    @Component
     protected ArtifactCollector artifactCollector;
 
     /**

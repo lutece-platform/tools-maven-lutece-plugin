@@ -52,19 +52,27 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Assembly zips for Lutece core or plugin project.<br/> If you wish to force
  * webapp re-creation (for instance, if you changed the version of a
  * dependency), call the <code>clean</code> phase before this goal.
  *
- * @goal assembly
- * @execute phase="process-classes"
- * @requiresDependencyResolution compile
+ * 
  */
 
-@Mojo( name = "assembly" )
+@Mojo( name = "assembly" ,
+requiresDependencyResolution = ResolutionScope.COMPILE
+		)
+@Execute ( goal = "assembly",
+		phase=LifecyclePhase.PROCESS_CLASSES )
 public class AssemblyMojo
     extends AbstractLuteceWebappMojo
 {
@@ -81,71 +89,73 @@ public class AssemblyMojo
     /**
      * The directory containing the site resource files.
      *
-     * @parameter expression="${basedir}/src/site/resources"
-     * @required
      */
+    @Parameter(
+    		property = "basedir/src/site/resources",
+            required = true )
     private File resourcesDirectory;
 
     /**
      * The directory containing the source files.
      *
-     * @parameter expression="${basedir}/src"
-     * @required
      */
+    @Parameter(
+    		property = "basedir/src",
+            required = true )
     private File sourcesDirectory;
 
     /**
      * The name of the generated artifact.
      *
-     * @parameter expression="${project.build.finalName}"
-     * @required
      */
+    @Parameter(
+    		property = "project.build.finalName",
+            required = true )
     private String artifactName;
 
     /**
      * The project's output directory.
      *
-     * @parameter expression="${assemblyOutputDirectory}"
      */
+    @Parameter(
+    		property = "assemblyOutputDirectory" )
     protected File assemblyOutputDirectory;
 
     /**
      * Whether creating the archives should be forced.
      *
-     * @parameter expression="${jar.forceCreation}" default-value="false"
      */
+    @Parameter(
+    		property = "jar.forceCreation",
+            defaultValue = "false" )
     private boolean forceCreation;
 
     /**
      * The Zip archiver.
      *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="zip"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "zip" )
     private ZipArchiver zipSrcArchiver;
 
     /**
      * The Zip archiver.
      *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="zip"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "zip" )
     private ZipArchiver zipBinArchiver;
 
     /**
      * The Jar archiver.
      *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="jar"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "jar" )
     private JarArchiver jarArchiver;
 
     /**
      * The War archiver.
      *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="war"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "war" )
     private WarArchiver warArchiver;
 
     /**
@@ -155,8 +165,8 @@ public class AssemblyMojo
      *      href="http://maven.apache.org/ref/current/maven-archiver/apidocs/org/apache/maven/archiver/MavenArchiveConfiguration.html">the
      *      Javadocs for MavenArchiveConfiguration</a>.
      *
-     * @parameter
      */
+    @Parameter
     private MavenArchiveConfiguration archiveCfg = new MavenArchiveConfiguration(  );
 
     /**

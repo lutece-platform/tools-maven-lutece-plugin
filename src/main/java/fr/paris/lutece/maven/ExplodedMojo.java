@@ -56,7 +56,11 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Explodes a test webapp for a Lutece plugin or site project.<br/> Note that
@@ -71,12 +75,13 @@ import org.apache.maven.plugins.annotations.Mojo;
  * version of a dependency), call the <code>clean</code> phase before this
  * goal.
  *
- * @goal exploded
- * @execute phase="process-classes"
- * @requiresDependencyResolution compile+runtime
  */
 
-@Mojo( name = "exploded" )
+@Mojo( name = "exploded" ,
+ requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME
+		)
+@Execute ( goal = "exploded",
+		phase=LifecyclePhase.PROCESS_CLASSES )
 public class ExplodedMojo
     extends AbstractLuteceWebappMojo
 {
@@ -106,7 +111,7 @@ public class ExplodedMojo
         getLog(  ).info( "   |         |     |       |         |      |            |   " );
         getLog(  ).info( "   |____     |___  |       |      |_____    |_____    |_____ " );
         getLog(  ).info( "        |          |       |            |         |         |" );
-        getLog(  ).info( "              LUTECE Maven Plugin - Version : 4.0            " );
+        getLog(  ).info( "              LUTECE Maven Plugin - Version : 4.1.3            " );
         
         if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
                  ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&

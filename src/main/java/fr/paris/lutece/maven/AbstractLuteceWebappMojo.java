@@ -49,7 +49,10 @@ import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 
@@ -63,69 +66,96 @@ public abstract class AbstractLuteceWebappMojo
     /**
      * The directory containing the local, user-specific configuration files.
      *
-     * @parameter default-value="${user.home}/lutece/conf/${project.artifactId}"
      */
+	@Parameter( 
+            defaultValue = "${user.home}/lutece/conf/${project.artifactId}")
     protected File localConfDirectory;
 
     /**
      * The set of artifacts required by this project, including transitive
      * dependencies.
      *
-     * @parameter default-value="${project.artifacts}"
-     * @required
-     * @readonly
      */
+    @Parameter( 
+            defaultValue = "${project.artifacts}",
+            required = true, 
+            readonly = true)
     protected Set<Artifact> artifacts;
 
     /**
      * The unarchiver.
      *
-     * @component role="org.codehaus.plexus.archiver.UnArchiver" roleHint="zip"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.UnArchiver.class, hint = "zip" )
     private ZipUnArchiver unArchiver;
 
     /**
      * The artifact factory.
      *
-     * @component
      */
+    @Component
     private org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
 
     /**
      * The artifact resolver.
      *
-     * @component
      */
+    @Component
     protected org.apache.maven.artifact.resolver.ArtifactResolver resolver;
 
     /**
      * The local repository.
      *
-     * @parameter expression="${localRepository}"
      */
+    @Parameter( 
+            property = "localRepository")
     protected org.apache.maven.artifact.repository.ArtifactRepository localRepository;
 
     /**
      * The remote repositories.
      *
-     * @parameter expression="${project.remoteArtifactRepositories}"
      */
+    @Parameter( 
+    		property = "project.remoteArtifactRepositories")
     protected java.util.List<ArtifactRepository> remoteRepositories;
 
     /**
      * The artifact metadata source.
      *
-     *  @component
      */
+    @Component
     protected ArtifactMetadataSource metadataSource;
 
     /**
      * The directory where to explode the test webapp.
      *
-     * @parameter expression="${testWebappDirectory}" default-value="${project.build.directory}/lutece"
+     *
      */
+    @Parameter( 
+    		property = "testWebappDirectory",
+    		defaultValue = "${project.build.directory}/lutece" )
     protected File testWebappDirectory;
+    /**
+     * The directory where to explode the  webapp.
+     *
+     *
+     */
+    @Parameter( 
+    		property = "webappDirectory",
+            defaultValue = "${project.build.directory}/lutece")
+    protected File webappDirectory;
+   /**
+    * 
+    */
+    @Parameter( 
+            defaultValue = "${WEB-INF/lib/}")
+    private String outdatedCheckPath;
+    
+    /**
+     * The list of webResources we want to transfer.
+     */
+    @Parameter
+    private Resource[] webResources;
 
     /**
      * Creates an exploded webapp structure from the current project.

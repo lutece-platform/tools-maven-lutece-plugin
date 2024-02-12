@@ -48,7 +48,13 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Builds a site's final WAR from a Lutece core artifact and a set of Lutece
@@ -58,13 +64,13 @@ import org.apache.maven.plugins.annotations.Mojo;
  * force webapp re-creation (for instance, if you changed the version of a
  * dependency), call the <code>clean</code> phase before this goal.
  *
- * @goal site-assembly
- * @execute phase="process-resources"
- * @requiresDependencyResolution compile+runtime
  */
 
-@Mojo( name = "site-assembly" )
-
+@Mojo( name = "site-assembly" ,
+requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME
+		)
+@Execute ( goal = "site-assembly",
+		phase=LifecyclePhase.PROCESS_CLASSES )
 public class AssemblySiteMojo
     extends AbstractLuteceWebappMojo
 {
@@ -78,32 +84,34 @@ public class AssemblySiteMojo
     /**
      * The output date format.
      *
-     * @parameter default-value="yyyyMMdd.HHmmss"
-     * @required
      */
+    @Parameter(
+            defaultValue = "yyyyMMdd.HHmmss", required = true )
     private String utcTimestampPattern;
 
     /**
      * The name of the generated WAR file.
      *
-     * @parameter expression="${project.build.finalName}"
-     * @required
      */
+    @Parameter(
+            property = "project.build.finalName", required = true )
     private String finalName;
 
     /**
      * A temporary directory used to hold the exploded version of the webapp.
      *
-     * @parameter expression="${project.build.directory}/${project.build.finalName}"
-     * @required
      */
+    @Parameter(
+            property = "project.build.directory/project.build.finalName", required = true )
     private File explodedDirectory;
 
     /**
      * Whether creating the archive should be forced.
      *
-     * @parameter expression="${jar.forceCreation}" default-value="false"
      */
+    @Parameter(
+    		property = "jar.forceCreation",
+            defaultValue = "yyyyMMdd.HHmmss" )
     private boolean forceCreation;
 
     /**
@@ -113,16 +121,15 @@ public class AssemblySiteMojo
      * href="http://maven.apache.org/ref/current/maven-archiver/apidocs/org/apache/maven/archiver/MavenArchiveConfiguration.html">the
      * Javadocs for MavenArchiveConfiguration</a>.
      *
-     * @parameter
      */
+    @Parameter
     private MavenArchiveConfiguration archive = new MavenArchiveConfiguration(  );
 
     /**
      * The Jar archiver.
      *
-     * @component role="org.codehaus.plexus.archiver.Archiver" roleHint="jar"
-     * @required
      */
+    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "jar" )
     private JarArchiver jarArchiver;
 
     /**

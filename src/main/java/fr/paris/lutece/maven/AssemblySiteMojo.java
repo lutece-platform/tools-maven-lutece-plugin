@@ -33,28 +33,27 @@
  */
 package fr.paris.lutece.maven;
 
+import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.TimeZone;
+
 import org.apache.maven.archiver.MavenArchiveConfiguration;
 import org.apache.maven.archiver.MavenArchiver;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-
-import org.codehaus.plexus.archiver.jar.JarArchiver;
-import org.codehaus.plexus.util.StringUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
-
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.codehaus.plexus.archiver.jar.JarArchiver;
+import org.codehaus.plexus.util.StringUtils;
 
 /**
  * Builds a site's final WAR from a Lutece core artifact and a set of Lutece
@@ -102,7 +101,7 @@ public class AssemblySiteMojo
      *
      */
     @Parameter(
-            property = "project.build.directory/project.build.finalName", required = true )
+            defaultValue = "${project.build.directory}/${project.build.finalName}", required = true )
     private File explodedDirectory;
 
     /**
@@ -113,6 +112,25 @@ public class AssemblySiteMojo
     		property = "jar.forceCreation",
             defaultValue = "yyyyMMdd.HHmmss" )
     private boolean forceCreation;
+    
+    /**
+     * When used, the name of the database vendor.
+     * 
+     * Authorized value are:
+     * <ul>
+     * <li>hsqldb
+     * <li>mysql
+     * <li>oracle
+     * <li>postgresql
+     * <li>none : does not process anything (default)
+     * <li>auto : will try to determine behaviour from contents of db.properties
+     * </ul>
+     */
+    @Parameter(property = "targetDatabaseVendor", defaultValue = DATABASE_VENDOR_NONE)
+    private String targetDatabaseVendor;
+    private static final String DATABASE_VENDOR_NONE = "none";
+    private static final String DATABASE_VENDOR_AUTO = "auto";
+    private static final Collection<String> DATABASE_VENDORS = Arrays.asList("hsqldb", "mysql", "oracle", "postgresql");
 
     /**
      * The maven archive configuration to use.
@@ -160,25 +178,36 @@ public class AssemblySiteMojo
         explodeConfigurationFiles( explodedDirectory );
         
 		// duplicate SQL files in target WAR classpath for liquibase
-		try
-		{
-            File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
-            File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
-            // we allow explicit override of build.properties location with this system property
-            File dbProperties = new File(explodedDirectory, WEB_INF_DB_PROPERTIES_PATH);
-            File buildProperties = new File(explodedDirectory, WEB_INF_BUILD_PROPERTIES_PATH);
-            String buildPropertiesOverride = System.getProperty("liquibase.override.build.properties");
-            if (buildPropertiesOverride != null)
-                buildProperties = new File(buildPropertiesOverride);
-            SqlRegexpHelper sqlHelper = new SqlRegexpHelper(buildProperties, SqlRegexpHelper.findDbName(dbProperties));
-            // we do not use copyDirectoryStructure since we have specific needs
-            FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir, f -> f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 && LiquiBaseSqlMojo.isTaggedWithLiquibase(f), sqlHelper::filter);
-		} catch (Exception e)
-		{
-			// Use the same catch block for all IOExceptions, presumably the
-			// exception's message will be clear enough.
-			throw new MojoExecutionException("Error while copying resources", e);
-		}
+        if (targetDatabaseVendor != null && !DATABASE_VENDOR_NONE.equals(targetDatabaseVendor))
+            try
+            {
+                File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
+                File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
+                // we allow explicit override of build.properties location with this system property
+                File dbProperties = new File(explodedDirectory, WEB_INF_DB_PROPERTIES_PATH);
+                File buildProperties = new File(explodedDirectory, WEB_INF_BUILD_PROPERTIES_PATH);
+                String buildPropertiesOverride = System.getProperty("liquibase.override.build.properties");
+                if (buildPropertiesOverride != null)
+                    buildProperties = new File(buildPropertiesOverride);
+                String dbVendor = null;
+                if (DATABASE_VENDOR_AUTO.equals(targetDatabaseVendor))
+                    dbVendor = SqlRegexpHelper.findDbName(dbProperties);
+                else if (DATABASE_VENDORS.contains(targetDatabaseVendor))
+                    dbVendor = targetDatabaseVendor;
+                else
+                    throw new IllegalArgumentException("Unknown targetDatabaseVendor : '" + targetDatabaseVendor + "'");
+                SqlRegexpHelper sqlHelper = new SqlRegexpHelper(buildProperties, dbVendor);
+                getLog(  ).info( "Processing SQL files with target " + dbVendor );
+                // we do not use copyDirectoryStructure since we have specific needs
+                FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir,
+                        f -> f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 && LiquiBaseSqlMojo.isTaggedWithLiquibase(f),
+                        sqlHelper::filter);
+            } catch (Exception e)
+            {
+                // Use the same catch block for all IOExceptions, presumably the
+                // exception's message will be clear enough.
+                throw new MojoExecutionException("Error while copying resources", e);
+            }
 
         // put the timestamp in the assembly name
         if ( ArtifactUtils.isSnapshot( project.getVersion(  ) ) )

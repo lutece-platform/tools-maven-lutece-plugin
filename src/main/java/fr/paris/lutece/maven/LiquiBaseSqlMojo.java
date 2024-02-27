@@ -48,7 +48,11 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.w3c.dom.Document;
 
 /**
@@ -56,14 +60,13 @@ import org.w3c.dom.Document;
  * 
  * The default behaviour is to overwrite SQL files.
  * 
- * 
- * @goal liquibase-sql
- * @execute phase="process-resources"
- * @requiresDependencyResolution compile+runtime
  */
 
-@Mojo(name = "liquibase-sql")
-
+@Mojo(name = "liquibase-sql" ,
+requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME
+       )
+@Execute ( goal = "liquibase-sql",
+       phase=LifecyclePhase.PROCESS_RESOURCES )
 public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 {
 
@@ -78,9 +81,8 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
     /**
      * Dry run creates files in target instead of replacing
-     * 
-     * @parameter expression="${dryRun}" default-value="false"
      */
+    @Parameter(property = "dryRun", defaultValue = "false")
     private boolean dryRun;
 
     // default values for core : we suppose that the version is always good

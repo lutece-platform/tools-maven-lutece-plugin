@@ -42,7 +42,9 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * Goal which cleans the build.
@@ -63,7 +65,6 @@ import org.apache.maven.plugins.annotations.Mojo;
  * </P>
  *
  *
- * @see org.apache.maven.plugin.clean.Fileset.
  */
 @Mojo( name = "clean" )
 public class CleanMojo
@@ -71,41 +72,32 @@ public class CleanMojo
 {
     /**
      * This is where compiled test classes go.
-     *
-     * @parameter expression="${project.build.directory}/test-classes"
-     * @required
-     * @readonly
      */
+    @Parameter(defaultValue = "${project.build.directory}/test-classes", required = true, readonly = true)
     private File testOutputDirectory;
 
     /**
      * This is where the site plugin generates its pages.
-     *
-     * @parameter expression="${project.build.directory}/site"
-     * @required
-     * @readonly
      */
+    @Parameter(defaultValue = "${project.build.directory}/site", required = true, readonly = true)
     private File reportDirectory;
 
     /**
      * Sets whether the plugin runs in verbose mode.
-     *
-     * @parameter expression="${clean.verbose}" default-value="false"
      */
+    @Parameter(property = "clean.verbose", defaultValue = "false")
     private boolean verbose;
 
     /**
      * The list of fileSets to delete, in addition to the default directories.
-     *
-     * @parameter
      */
+    @Parameter
     private List<FileSet> filesets;
 
     /**
      * Sets whether the plugin should follow Symbolic Links to delete files.
-     *
-     * @parameter expression="${clean.followSymLinks}" default-value="false"
      */
+    @Parameter(property = "clean.followSymLinks", defaultValue = "false")
     private boolean followSymLinks;
 
     /**
@@ -130,17 +122,14 @@ public class CleanMojo
         if ( ( reactorProjects.size(  ) > 1 ) && ( reactorProjects.indexOf( project ) == 0 ) )
         {
             //Delete the global project target
-            fileSetManager = new FileSetManager( getLog(  ),
-                                                 verbose );
+            fileSetManager = new FileSetManager( );
             removeDirectory( getRootProjectBuildDirectoryTarget(  ) );
             removeAdditionalFilesets(  );
         }
-
         if ( ! POM_PACKAGING.equals( project.getPackaging(  ) ) ) // For not delete the global target after the modules target
         {
             //delete the current project target
-            fileSetManager = new FileSetManager( getLog(  ),
-                                                 verbose );
+            fileSetManager = new FileSetManager( );
             removeDirectory( classesDirectory );
             removeDirectory( testOutputDirectory );
             removeDirectory( reportDirectory );
@@ -161,7 +150,7 @@ public class CleanMojo
     {
         if ( ( filesets != null ) && ! filesets.isEmpty(  ) )
         {
-            for ( Iterator it = filesets.iterator(  ); it.hasNext(  ); )
+            for ( Iterator<FileSet> it = filesets.iterator(  ); it.hasNext(  ); )
             {
                 FileSet fileset = (FileSet) it.next(  );
 

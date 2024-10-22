@@ -41,20 +41,26 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import javax.inject.Inject;
+
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.repository.RemoteRepository;
 
 /**
  * Abstracts functionnality common to mojos that create a Lutece webapp from
@@ -63,6 +69,7 @@ import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 public abstract class AbstractLuteceWebappMojo
     extends AbstractLuteceMojo
 {
+	
     /**
      * The directory containing the local, user-specific configuration files.
      *
@@ -86,21 +93,33 @@ public abstract class AbstractLuteceWebappMojo
      * The unarchiver.
      *
      */
-    @Component ( role = org.codehaus.plexus.archiver.UnArchiver.class, hint = "zip" )
-    private ZipUnArchiver unArchiver;
+  //  @Component ( role = org.codehaus.plexus.archiver.UnArchiver.class, hint = "zip" )
+    @Inject
+    protected ZipUnArchiver unArchiver;
+    
+    @Inject
+    protected ArtifactHandlerManager artifactHandlerManager;
+    
+    @Inject
+    protected RepositorySystem repoSystem;
 
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+    protected RepositorySystemSession repoSession;
+
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true)
+    protected List<RemoteRepository> remoteProjectRepositories;
     /**
      * The artifact factory.
      *
      */
-    @Component
-    private org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
+    @Inject
+    protected org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
 
     /**
      * The artifact resolver.
      *
      */
-    @Component
+    @Inject
     protected org.apache.maven.artifact.resolver.ArtifactResolver resolver;
 
     /**
@@ -123,7 +142,7 @@ public abstract class AbstractLuteceWebappMojo
      * The artifact metadata source.
      *
      */
-    @Component
+    @Inject
     protected ArtifactMetadataSource metadataSource;
 
     /**
@@ -391,7 +410,7 @@ public abstract class AbstractLuteceWebappMojo
      *             if there is no lutece-core dependency, or more than one, or
      *             if an error occurs while resolving the artifact.
      */
-    private void explodeCore( File webappDir )
+    protected void explodeCore( File webappDir )
                       throws MojoExecutionException
     {
         // Get all the lutece-core artifacts from the project
@@ -423,7 +442,7 @@ public abstract class AbstractLuteceWebappMojo
      * @throws MojoExecutionException
      *             if an error occurs while resolving the artifacts.
      */
-    private void explodePlugins( File webappDir )
+    protected void explodePlugins( File webappDir )
                          throws MojoExecutionException
     {
         // Get all the lutece-plugin artifacts from the project
@@ -447,7 +466,7 @@ public abstract class AbstractLuteceWebappMojo
      * @throws MojoExecutionException
      *             if an error occurs while resolving the artifacts.
      */
-    private void explodeSites( File webappDir )
+    protected void explodeSites( File webappDir )
                          throws MojoExecutionException
     {
         // Get all the lutece-site artifacts from the project

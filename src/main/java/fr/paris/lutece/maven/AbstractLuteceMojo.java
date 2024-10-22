@@ -35,6 +35,7 @@ package fr.paris.lutece.maven;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -202,6 +203,11 @@ public abstract class AbstractLuteceMojo
             readonly = true,
             required = true )
     protected MavenProject project;
+    /**
+     * The maven session
+     */
+    @Parameter(defaultValue = "${session}", readonly = true)
+	 protected MavenSession session;
 
     /**
      * The directory containing the Java classes.
@@ -297,5 +303,15 @@ public abstract class AbstractLuteceMojo
     public void enableLogging( Logger logger )
     {
         this.logger = logger;
+    }
+    
+    public void logBanner() {
+        getLog().info(" __        __    __   ________  ________  ________  ________");
+        getLog().info("   |         |     |          |         |         |         |");
+        getLog().info("   |         |     |       |      |__       |         |__    ");
+        getLog().info("   |         |     |       |         |      |            |   ");
+        getLog().info("   |____     |___  |       |      |_____    |_____    |_____ ");
+        getLog().info("        |          |       |            |         |         |");
+        getLog().info("              LUTECE Maven Plugin - Version : 5.0.0            ");
     }
 }

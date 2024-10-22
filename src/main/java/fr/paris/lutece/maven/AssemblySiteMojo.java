@@ -46,9 +46,9 @@ import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.TimeZone;
 
-import org.apache.maven.plugins.annotations.Component;
+import javax.inject.Inject;
+
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -73,7 +73,6 @@ requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME
 public class AssemblySiteMojo
     extends AbstractLuteceWebappMojo
 {
-    private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
     private static final String SNAPSHOT_PATTERN = "SNAPSHOT";
 
     /**
@@ -124,7 +123,7 @@ public class AssemblySiteMojo
      * The Jar archiver.
      *
      */
-    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "jar" )
+    @Inject
     private JarArchiver jarArchiver;
 
     /**
@@ -178,7 +177,7 @@ public class AssemblySiteMojo
                         .addDirectory( explodedDirectory, PACKAGE_WEBAPP_INCLUDES, PACKAGE_WEBAPP_RESOURCES_EXCLUDES );
             }
 
-            archiver.createArchive( project, archive );
+            archiver.createArchive( session, project, archive );
         } catch ( Exception e )
         {
             throw new MojoExecutionException( "Error assembling WAR", e );

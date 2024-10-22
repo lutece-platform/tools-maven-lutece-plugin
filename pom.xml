@@ -49,37 +49,41 @@
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
-            <version>3.2.5</version>
+            <version>3.9.8</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-tools-api</artifactId>
-            <version>3.2</version>
+            <version>3.15.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-compat</artifactId>
-            <version>3.2.5</version>
+            <version>3.9.8</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-archiver</artifactId>
-            <version>2.10.2</version>
+            <version>4.9.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-archiver</artifactId>
-            <version>2.6</version>
+            <version>3.6.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>file-management</artifactId>
-            <version>1.2.1</version>
+            <version>3.1.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -88,13 +92,11 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
-
-        
         <!-- dependencies to annotations -->
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
-            <version>3.4</version>
+            <version>3.15.0</version>
             <scope>provided</scope>
         </dependency>
 
@@ -106,7 +108,7 @@
 			<plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.10.1</version>
         <configuration>
         	<additionalOptions>-Xdoclint:none</additionalOptions>   
         </configuration>
@@ -114,7 +116,7 @@
             <!-- Configuration to release from GitHub -->
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
+                <version>3.1.1</version>
                 <configuration>
                     <providerImplementations>
                         <git>jgit</git>
@@ -124,18 +126,18 @@
                     <dependency>
                         <groupId>org.apache.maven.scm</groupId>
                         <artifactId>maven-scm-provider-jgit</artifactId>
-                        <version>1.9.2</version>
+                        <version>2.1.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>           
+                <version>3.13.0</version>           
             </plugin>
             <plugin>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.8.2</version>
+                <version>3.20.0</version>
                 <configuration>
                     <locales>en,fr</locales>
                 </configuration>
@@ -151,13 +153,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>2.7</version>
+                <version>3.7.0</version>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.8.2</version>
+                <version>3.15.0</version>
                 <executions>
                     <execution>
                         <id>generated-helpmojo</id>
@@ -172,7 +174,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.0.2</version>
+                <version>3.3.1</version>
                 
             </plugin>
         </plugins>
@@ -180,7 +182,7 @@
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-ftp</artifactId>
-                <version>2.6</version>
+                <version>3.5.3</version>
             </extension>
         </extensions>
     </build>

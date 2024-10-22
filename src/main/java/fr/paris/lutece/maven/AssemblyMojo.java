@@ -53,7 +53,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.maven.plugins.annotations.Component;
+import javax.inject.Inject;
+
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -134,37 +135,35 @@ public class AssemblyMojo
      * The Zip archiver.
      *
      */
-    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "zip" )
+    @Inject
     private ZipArchiver zipSrcArchiver;
 
     /**
      * The Zip archiver.
      *
      */
-    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "zip" )
+    @Inject
     private ZipArchiver zipBinArchiver;
 
     /**
      * The Jar archiver.
      *
      */
-    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "jar" )
+    @Inject
     private JarArchiver jarArchiver;
 
     /**
      * The War archiver.
      *
      */
-    @Component ( role = org.codehaus.plexus.archiver.Archiver.class, hint = "war" )
+    @Inject
     private WarArchiver warArchiver;
 
     /**
-     * The maven archive configuration to use.
+     * The Maven archive configuration to use.
      *
-     * @see <a
-     *      href="http://maven.apache.org/ref/current/maven-archiver/apidocs/org/apache/maven/archiver/MavenArchiveConfiguration.html">the
-     *      Javadocs for MavenArchiveConfiguration</a>.
-     *
+     * @see <a href="https://maven.apache.org/plugins-archives/maven-javadoc-plugin-LATEST/apidocs/org/apache/maven/plugins/javadoc/JavadocArchiveConfiguration.html">
+     *      Javadocs for MavenArchiveConfiguration</a>
      */
     @Parameter
     private MavenArchiveConfiguration archiveCfg = new MavenArchiveConfiguration(  );
@@ -227,7 +226,7 @@ public class AssemblyMojo
 
             // Create the jar file, containing compiled classes
             File jarFile = getArchiveFile( null, false, "jar" );
-            jarArchiver.reset(  );
+            //jarArchiver.reset(  );
             archiver.setArchiver( jarArchiver );
             archiver.setOutputFile( jarFile );
 
@@ -240,7 +239,7 @@ public class AssemblyMojo
                         .addDirectory( classesDirectory, PACKAGE_CLASSES_INCLUDES, PACKAGE_CLASSES_EXCLUDES );
             }
 
-            archiver.createArchive( project, archiveCfg );
+            archiver.createArchive( session, project, archiveCfg );
 
             // Create core war
             File warFile = getArchiveFile( null, false, "war" );
@@ -315,12 +314,12 @@ public class AssemblyMojo
                     }
                 }
 
-                archiver.createArchive( project, archiveCfg );
+                archiver.createArchive( session, project, archiveCfg );
             }
 
             // Create the final zip file
             File webappZip = getArchiveFile( ( LUTECE_CORE_TYPE.equals( projectType ) ? "war" : "bin" ), true, "zip" );
-            zipBinArchiver.reset(  );
+            //zipBinArchiver.reset(  );
             zipBinArchiver.setCompress( true );
             zipBinArchiver.setForced( forceCreation );
             zipBinArchiver.setDestFile( webappZip );
@@ -424,7 +423,7 @@ public class AssemblyMojo
         {
             // Prepare the source zip file
             File webappZip = getArchiveFile( "src", true, "zip" );
-            zipSrcArchiver.reset(  );
+           // zipSrcArchiver.reset(  );
             zipSrcArchiver.setCompress( true );
             zipSrcArchiver.setForced( forceCreation );
             zipSrcArchiver.setDestFile( webappZip );

@@ -51,7 +51,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.maven.plugins.annotations.Component;
+import javax.inject.Inject;
+
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -130,7 +131,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
      *
      * @component
      */
-    @Component
+    @Inject
     private ArchiverManager archiverManager;
 
     /**

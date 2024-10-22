@@ -105,14 +105,7 @@ public class ExplodedMojo
     public void execute(  )
                  throws MojoExecutionException, MojoFailureException
     {
-        getLog(  ).info( " __        __    __   ________  ________  ________  ________" );
-        getLog(  ).info( "   |         |     |          |         |         |         |" );
-        getLog(  ).info( "   |         |     |       |      |__       |         |__    " );
-        getLog(  ).info( "   |         |     |       |         |      |            |   " );
-        getLog(  ).info( "   |____     |___  |       |      |_____    |_____    |_____ " );
-        getLog(  ).info( "        |          |       |            |         |         |" );
-        getLog(  ).info( "              LUTECE Maven Plugin - Version : 4.1.3            " );
-        
+    	 logBanner();
         if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
                  ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&
                  ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) ) &&

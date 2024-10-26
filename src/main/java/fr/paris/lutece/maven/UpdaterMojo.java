@@ -33,17 +33,6 @@
  */
 package fr.paris.lutece.maven;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-
-import org.codehaus.plexus.archiver.Archiver;
-import org.codehaus.plexus.archiver.manager.ArchiverManager;
-import org.codehaus.plexus.util.DirectoryScanner;
-
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -53,11 +42,20 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.codehaus.plexus.archiver.Archiver;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.util.DirectoryScanner;
 
 /**
  * Assembly zips for Lutece core or plugin project.<br/> If you wish to force
@@ -150,7 +148,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
             throw new MojoExecutionException("This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or "
                     + LUTECE_PLUGIN_PACKAGING + " project.");
         }
-        
+
         getLog().info( "Version FROM : " + strDefinedFromVersion );
 
         String strVersion = getVersion();
@@ -170,15 +168,14 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
 
         if (upgradeSqlFiles.length > 0)
         {
-            for (int i = 0; i < upgradeSqlFiles.length; i++)
-            {
-                String strVersionFrom = getVersionFrom(upgradeSqlFiles[i]);
+            for (String upgradeSqlFile : upgradeSqlFiles) {
+                String strVersionFrom = getVersionFrom(upgradeSqlFile);
 
                 if (strVersionFrom != null)
                 {
                     String[] files = new String[]
                     {
-                        upgradeSqlFiles[i]
+                        upgradeSqlFile
                     };
                     getLog().info("Building UPGRADE package from version " + strVersionFrom + " ...");
                     assemblyBinaries(files, "upgrade-" + strVersionFrom + "-" + strVersion);
@@ -187,7 +184,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
         }
         else
         {
-            
+
             // Build simple upgrade package with no sql upgrade
             getLog().info("Building UPGRADE package from version " + strDefinedFromVersion + " (No SQL file found) ...");
             assemblyBinaries(null,  "upgrade-" + strDefinedFromVersion + "-" + strVersion);
@@ -274,7 +271,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
 
             ////////////////////////////////////////////////////////////////////
             // Build Plugin's jar
-            
+
             getLog().info( "Build plugin's jar ...");
             Archiver archiverLibrary = archiverManager.getArchiver("jar");
 
@@ -295,9 +292,9 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
 
             ////////////////////////////////////////////////////////////////////
             // Build Plugin's package
- 
+
             getLog().info( "Build plugin's package ...");
-            
+
             Archiver archiverPackage = archiverManager.getArchiver("zip");
 
             // Create the final zip file
@@ -315,10 +312,9 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
                  */
                 if (filenames != null)
                 {
-                    for (int i = 0; i < filenames.length; i++)
-                    {
+                    for (String filename : filenames) {
                         File f = new File(sqlDirectory.getParentFile(),
-                                filenames[i]);
+                                filename);
                         archiverPackage.addFile(f, SQL_FOLDER_PATH + f.getName());
                     }
                 }
@@ -407,10 +403,10 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
     @SuppressWarnings("unchecked")
     private Collection<File> getDependentJars()
     {
-        HashSet<File> result = new HashSet<File>();
+        HashSet<File> result = new HashSet<>();
 
         // Direct dependency artifacts of project
-        Set<Artifact> resultArtifact = new HashSet<Artifact>();
+        Set<Artifact> resultArtifact = new HashSet<>();
 
         for (Object o : project.getDependencyArtifacts())
         {

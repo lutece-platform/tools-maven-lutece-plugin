@@ -33,19 +33,6 @@
  */
 package fr.paris.lutece.maven;
 
-import org.apache.maven.archiver.MavenArchiveConfiguration;
-import org.apache.maven.archiver.MavenArchiver;
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-
-import org.codehaus.plexus.archiver.jar.JarArchiver;
-import org.codehaus.plexus.archiver.war.WarArchiver;
-import org.codehaus.plexus.archiver.zip.ZipArchiver;
-
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -55,18 +42,29 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.apache.maven.archiver.MavenArchiveConfiguration;
+import org.apache.maven.archiver.MavenArchiver;
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.codehaus.plexus.archiver.jar.JarArchiver;
+import org.codehaus.plexus.archiver.war.WarArchiver;
+import org.codehaus.plexus.archiver.zip.ZipArchiver;
 
 /**
  * Assembly zips for Lutece core or plugin project.<br/> If you wish to force
  * webapp re-creation (for instance, if you changed the version of a
  * dependency), call the <code>clean</code> phase before this goal.
  *
- * 
+ *
  */
 
 @Mojo( name = "assembly" ,
@@ -500,10 +498,10 @@ public class AssemblyMojo
     @SuppressWarnings( "unchecked" )
     private Collection<File> getDependentJars(  )
     {
-        HashSet<File> result = new HashSet<File>(  );
+        HashSet<File> result = new HashSet<>(  );
 
         // Direct dependency artifacts of project
-        Set<Artifact> resultArtifact = new HashSet<Artifact>(  );
+        Set<Artifact> resultArtifact = new HashSet<>(  );
 
         for ( Object o : project.getDependencyArtifacts(  ) )
         {

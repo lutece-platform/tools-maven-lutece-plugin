@@ -33,7 +33,13 @@
  */
 package fr.paris.lutece.maven;
 
-import fr.paris.lutece.maven.utils.plugindat.PluginDataService;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
@@ -47,20 +53,13 @@ import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.project.MavenProject;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
+
+import fr.paris.lutece.maven.utils.plugindat.PluginDataService;
 
 /**
  * Explodes a test webapp for a Lutece plugin or site project.<br/> Note that
@@ -153,8 +152,8 @@ public class ExplodedMojo
                 copyThirdPartyJars( testWebappDirectory );
 
                 // copy dependencies in directory WEB-INF/lib
-                Set<Artifact> artifactsToCopy = new LinkedHashSet<Artifact>(  );
-                Set<Artifact> artifactsToDelete = new LinkedHashSet<Artifact>(  );
+                Set<Artifact> artifactsToCopy = new LinkedHashSet<>(  );
+                Set<Artifact> artifactsToDelete = new LinkedHashSet<>(  );
                 Set<Artifact> artifactsReturn = doDependencyResolution(  );
                 buildListArtifacts( artifactsReturn, artifactsToCopy, artifactsToDelete );
 
@@ -356,7 +355,7 @@ public class ExplodedMojo
      */
     private Set<Artifact> doDependencyResolution(  )
     {
-        Set<Artifact> artifactsReturn = new HashSet<Artifact>(  );
+        Set<Artifact> artifactsReturn = new HashSet<>(  );
 
         // Collector Filter jar artifacts in scope 'compile' or 'runtime'
         ArtifactFilter thirdPartyFilter =
@@ -373,7 +372,7 @@ public class ExplodedMojo
             };
 
         // Collector listener config
-        List<ResolutionListener> listeners = new ArrayList<ResolutionListener>(  );
+        List<ResolutionListener> listeners = new ArrayList<>(  );
 
         if ( logger.isDebugEnabled(  ) )
         {
@@ -402,7 +401,7 @@ public class ExplodedMojo
         }
 
         // keep track of added reactor projects in order to avoid duplicates
-        Set<String> emittedReactorProjectId = new HashSet<String>(  );
+        Set<String> emittedReactorProjectId = new HashSet<>(  );
 
         for ( ResolutionNode node : artifactResolutionResult.getArtifactResolutionNodes(  ) )
         {

@@ -71,7 +71,7 @@ public class PluginDataService
         File filePluginsDirectory = new File( strWebappPath + PATH_PLUGINS_DIRECTORY );
         FilenameFilter filter = new PluginFileFilter(  );
         File[] files = filePluginsDirectory.listFiles( filter );
-        List<PluginData> list = new ArrayList<PluginData>(  );
+        List<PluginData> list = new ArrayList<>(  );
 
         if( files != null )
         {

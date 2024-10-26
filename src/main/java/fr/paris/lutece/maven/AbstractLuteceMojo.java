@@ -33,6 +33,11 @@
  */
 package fr.paris.lutece.maven;
 
+import java.io.File;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.execution.MavenSession;
@@ -40,14 +45,8 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
-
-import java.io.File;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Abstracts functionnality common to all Lutece mojos.
@@ -102,7 +101,7 @@ public abstract class AbstractLuteceMojo
      * The name of the lutece directory.
      */
     protected static final String LUTECE_DIRECTORY = "lutece";
-    
+
     protected static final String ARTIFACT_BUILD_CONFIG = "build-config";
 
     /**
@@ -187,7 +186,7 @@ public abstract class AbstractLuteceMojo
 
     // The path to the sql directory
     protected static final String WEB_INF_SQL_PATH = "WEB-INF/sql/";
-    
+
     protected static final String BUILD_CONFIG_PATH = "build-config/";
     protected static final String ANT_PATH = "ant/";
 
@@ -198,7 +197,7 @@ public abstract class AbstractLuteceMojo
      * The maven project.
      *
      */
-    @Parameter( 
+    @Parameter(
             property = "project",
             readonly = true,
             required = true )
@@ -213,7 +212,7 @@ public abstract class AbstractLuteceMojo
      * The directory containing the Java classes.
      *
      */
-    @Parameter( 
+    @Parameter(
     		property = "project.build.outputDirectory",
             required = true )
     protected File classesDirectory;
@@ -222,45 +221,46 @@ public abstract class AbstractLuteceMojo
      * The directory containing the default configuration files.
      *
      */
-    @Parameter( 
-    		property = "basedir/src/conf/default",
-            required = true )
+    @Parameter(
+    		property = "defaultConfDirectory",
+    	    defaultValue = "${basedir}/src/conf/default"
+             )
     protected File defaultConfDirectory;
 
     /**
      * The source directory for webapp components.
-     *
-     * @parameter expression="${basedir}/webapp"
-     * @required
      */
-    @Parameter( 
-    		property = "basedir/webapp",
+    @Parameter(
+    		property = "webappSourceDirectory",
+    	    defaultValue="${basedir}/webapp",
             required = true )
     protected File webappSourceDirectory;
 
     /**
      * The directory containing the database sql script.
      *
-     * @parameter expression="${basedir}/src/sql"
      */
-    @Parameter( 
-            property = "basedir/src/sql" )
+    @Parameter(
+            property = "sqlDirectory",
+            defaultValue = "${basedir}/src/sql"
+    		)
     protected File sqlDirectory;
 
     /**
      * The directory containing the default user documentation.
      *
-     * @parameter expression="${basedir}/src/site"
      */
-    @Parameter( 
-    		property = "basedir/src/site" )
+    @Parameter(
+    		property = "siteDirectory",
+    		defaultValue = "${basedir}/src/site"
+    		)
     protected File siteDirectory;
 
     /**
      * The project's output directory
      *
      */
-    @Parameter( 
+    @Parameter(
     		property = "project.build.directory",
             required = true )
     protected File outputDirectory;
@@ -269,7 +269,7 @@ public abstract class AbstractLuteceMojo
      * The projects in the reactor for aggregation report.
      *
      */
-    @Parameter( 
+    @Parameter(
     		property = "reactorProjects",
             readonly = true)
     protected List<MavenProject> reactorProjects;
@@ -286,10 +286,10 @@ public abstract class AbstractLuteceMojo
      * The set of artifacts required by the Multi Project, including transitive dependencies.
      *
      */
-    protected static Set<Artifact> multiProjectArtifacts = new HashSet<Artifact>(  );
+    protected static Set<Artifact> multiProjectArtifacts = new HashSet<>(  );
 
     /** The multi project artifacts. */
-    protected static Set<Artifact> multiProjectArtifactsCopied = new HashSet<Artifact>(  );
+    protected static Set<Artifact> multiProjectArtifactsCopied = new HashSet<>(  );
 
     /**
     * Plexus logger needed for debugging manual artifact resolution.
@@ -304,7 +304,7 @@ public abstract class AbstractLuteceMojo
     {
         this.logger = logger;
     }
-    
+
     public void logBanner() {
         getLog().info(" __        __    __   ________  ________  ________  ________");
         getLog().info("   |         |     |          |         |         |         |");

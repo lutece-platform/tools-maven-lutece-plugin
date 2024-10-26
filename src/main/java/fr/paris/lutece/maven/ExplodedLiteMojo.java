@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015, Mairie de Paris
+ * Copyright (c) 2002-2024, Mairie de Paris
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,39 +34,49 @@
 package fr.paris.lutece.maven;
 
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.ResolutionScope;
-
 /**
- * Mojo to explode a web application for Lutece projects.
+ * Mojo to explode a web application for Lutece projects while excluding Java class files and JAR dependencies.
  * <p>
- * This plugin is designed to be used for Lutece core, plugin, and site projects. 
- * It will validate the project packaging and handle the exploding of the 
- * web application files into the specified directory.
+ * This plugin is designed to be used for Lutece core, plugin, and site projects.
+ * This Mojo extracts a web application for Lutece projects while excluding Java class files and JAR dependencies.
+ * It focuses on unpacking the structure of the web application without including the compiled binaries, ensuring a cleaner,
+ * lightweight setup, primarily useful for development purposes.
+ *
+ * This goal supports the following configuration parameters:
  * </p>
  *
+ * <ul>
+ *   <li><code>outputDirectory</code>: The directory where the generated WAR file will be placed.</li>
+ *   <li><code>webResources</code>: Resources to be included in the WAR.</li>
+ *   <li><code>includeDependencies</code>: Whether to include project dependencies in the WAR file.</li>
+ *   <li><code>localConfDirectory</code>: The directory containing the local, user-specific configuration files.</li>
+ *   <li><code>defaultConfDirectory</code>: The directory containing the default configuration files.</li>
+ *   <li><code>sqlDirectory</code>: The directory containing the database sql script.</li>
+ *   <li><code>siteDirectory</code>: The directory containing the default user documentation</li>
+ *
+ * </ul>
  */
-@Mojo(name = "dev", defaultPhase = LifecyclePhase.VALIDATE, requiresDependencyCollection = ResolutionScope.TEST, requiresDependencyResolution = ResolutionScope.TEST)
-public class DevMojo extends AbstractLuteceWebappMojo {
+@Mojo(name = "exploded-lite", requiresDependencyCollection = ResolutionScope.TEST, requiresDependencyResolution = ResolutionScope.TEST)
+public class ExplodedLiteMojo extends AbstractLuteceWebappMojo {
 
     /**
      * Executes the goal.
      *
      * <p>
-     * This method checks if the project packaging is valid. If the packaging
-     * is valid, it proceeds to execute the project by calling
+     * This method proceeds to execute the project by calling
      * {@link #executeProject()}.
      * </p>
      *
@@ -75,15 +85,15 @@ public class DevMojo extends AbstractLuteceWebappMojo {
      */
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        logBanner();        
+        logBanner();
         String packaging = project.getPackaging();
 
         if (!isValidPackaging(packaging)) {
-            throw new MojoExecutionException("This goal can be invoked only on a " + 
-                                              LUTECE_CORE_PACKAGING + ", " + 
-                                              LUTECE_PLUGIN_PACKAGING + ", " + 
+            throw new MojoExecutionException("This goal can be invoked only on a " +
+                                              LUTECE_CORE_PACKAGING + ", " +
+                                              LUTECE_PLUGIN_PACKAGING + ", " +
                                               LUTECE_SITE_PACKAGING + " project.");
-        }    
+        }
         executeProject();
     }
 
@@ -131,9 +141,9 @@ public class DevMojo extends AbstractLuteceWebappMojo {
      * @return true if the packaging type is valid; false otherwise.
      */
     private boolean isValidPackaging(String packaging) {
-        return LUTECE_CORE_PACKAGING.equals(packaging) || 
+        return LUTECE_CORE_PACKAGING.equals(packaging) ||
                LUTECE_PLUGIN_PACKAGING.equals(packaging) ||
-               LUTECE_SITE_PACKAGING.equals(packaging) || 
+               LUTECE_SITE_PACKAGING.equals(packaging) ||
                POM_PACKAGING.equals(packaging);
     }
 
@@ -141,7 +151,7 @@ public class DevMojo extends AbstractLuteceWebappMojo {
      * Executes the project-specific tasks.
      *
      * <p>
-     * This method handles the explosion of the Lutece web application 
+     * This method handles the explosion of the Lutece web application
      * and configuration files.
      * </p>
      *
@@ -150,8 +160,8 @@ public class DevMojo extends AbstractLuteceWebappMojo {
     private void executeProject() throws MojoExecutionException {
         // Uncomment the following line if needed.
         // PluginDataService.generatePluginsDataFile(testWebappDirectory.getAbsolutePath());
-        explodeLuteceWebapp(testWebappDirectory);
-        explodeConfigurationFiles(testWebappDirectory);
+        explodeLuteceWebapp(webappDirectory);
+        explodeConfigurationFiles(webappDirectory);
     }
 
     /**
@@ -160,7 +170,7 @@ public class DevMojo extends AbstractLuteceWebappMojo {
      * @param targetDir the directory where the web application will be exploded.
      * @throws MojoExecutionException if an error occurs during the explosion process.
      */
-    protected void explodeLuteceWebapp(File targetDir) throws MojoExecutionException {
+    private void explodeLuteceWebapp(File targetDir) throws MojoExecutionException {
         try {
             boolean isInplace = targetDir.equals(webappSourceDirectory);
             boolean isUpdate = targetDir.exists();

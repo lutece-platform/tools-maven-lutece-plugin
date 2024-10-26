@@ -33,10 +33,6 @@
  */
 package fr.paris.lutece.maven;
 
-import org.apache.commons.io.IOUtils;
-
-import org.codehaus.plexus.util.IOUtil;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -45,6 +41,9 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
+import org.apache.commons.io.IOUtils;
+import org.codehaus.plexus.util.IOUtil;
 
 /**
  * Utility class to manipulate files.<br>
@@ -140,10 +139,7 @@ public class FileUtils
 
         String sourcePath = sourceDirectory.getAbsolutePath(  );
 
-        for ( int i = 0; i < files.length; i++ )
-        {
-            File file = files[i];
-
+        for (File file : files) {
             String dest = file.getAbsolutePath(  );
 
             dest = dest.substring( sourcePath.length(  ) + 1 );
@@ -210,10 +206,7 @@ public class FileUtils
 
         String sourcePath = sourceDirectory.getAbsolutePath(  );
 
-        for ( int i = 0; i < files.length; i++ )
-        {
-            File file = files[i];
-
+        for (File file : files) {
             String dest = file.getAbsolutePath(  );
 
             dest = dest.substring( sourcePath.length(  ) + 1 );
@@ -229,7 +222,7 @@ public class FileUtils
                          ! file.getAbsolutePath(  ).matches( REGEXP_SITE_XDOC_XML ) &&
                          ! file.getAbsolutePath(  ).matches( REGEXP_SITE_RESOURCES_XML ) )
                 {
-                    FileUtils.copyFileToDirectory( file, destination );
+                    org.codehaus.plexus.util.FileUtils.copyFileToDirectory( file, destination );
                     nNbFileCopy++;
                 }
             } else if ( file.isDirectory(  ) )

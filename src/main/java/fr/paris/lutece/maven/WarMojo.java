@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015, Mairie de Paris
+ * Copyright (c) 2002-2024, Mairie de Paris
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,53 +34,47 @@
 package fr.paris.lutece.maven;
 
 import java.io.File;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import javax.inject.Inject;
 
 import org.apache.maven.archiver.MavenArchiveConfiguration;
 import org.apache.maven.archiver.MavenArchiver;
-import org.apache.maven.artifact.ArtifactUtils;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.codehaus.plexus.archiver.jar.JarArchiver;
-import org.codehaus.plexus.util.StringUtils;
+
 
 /**
- * Builds a site's final WAR from a Lutece core artifact and a set of Lutece
- * plugin artifacts.<br/> Note that the Lutece dependencies (core and plugins)
- * will only be updated the first time the WAR is created. Subsequent calls to
- * this goal will only update the site's specific files.<br/> If you wish to
- * force webapp re-creation (for instance, if you changed the version of a
- * dependency), call the <code>clean</code> phase before this goal.
+ * Mojo for building a WAR (Web Application Archive) file for lutece applications.
  *
- */
+ * This goal compiles the project's source code, packages it along with its resources,
+ * and creates a WAR file suitable for deployment on a web server.
+ *
+ * <p>
+ * This goal supports the following configuration parameters:
+ * </p>
+ *
+ * <ul>
+ *   <li><code>outputDirectory</code>: The directory where the generated WAR file will be placed.</li>
+ *   <li><code>finalName</code>: The final name of the WAR file, without extension.</li>
+ *   <li><code>webResources</code>: Resources to be included in the WAR.</li>
+ *   <li><code>includeDependencies</code>: Whether to include project dependencies in the WAR file.</li>
+ *   <li><code>localConfDirectory</code>: The directory containing the local, user-specific configuration files.</li>
+ *   <li><code>defaultConfDirectory</code>: The directory containing the default configuration files.</li>
+ *   <li><code>sqlDirectory</code>: The directory containing the database sql script.</li>
+ *   <li><code>siteDirectory</code>: The directory containing the default user documentation</li>
+ *
+ * </ul>
+ **/
 
-@Mojo( name = "site-assembly" ,
-requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME
-		)
-@Execute ( goal = "site-assembly",
-		phase=LifecyclePhase.PROCESS_CLASSES )
-public class AssemblySiteMojo
-    extends AbstractLuteceWebappMojo
+@Mojo( name = "war" , defaultPhase=LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE)
+public class WarMojo extends AbstractLuteceWebappMojo
 {
-    private static final String SNAPSHOT_PATTERN = "SNAPSHOT";
-
-    /**
-     * The output date format.
-     *
-     */
-    @Parameter(
-            defaultValue = "yyyyMMdd.HHmmss", required = true )
-    private String utcTimestampPattern;
-
     /**
      * The name of the generated WAR file.
      *
@@ -88,14 +82,6 @@ public class AssemblySiteMojo
     @Parameter(
             property = "project.build.finalName", required = true )
     private String finalName;
-
-    /**
-     * A temporary directory used to hold the exploded version of the webapp.
-     *
-     */
-    @Parameter(
-            property = "project.build.directory/project.build.finalName", required = true )
-    private File explodedDirectory;
 
     /**
      * Whether creating the archive should be forced.
@@ -134,31 +120,29 @@ public class AssemblySiteMojo
 	public void execute(  )
                  throws MojoExecutionException, MojoFailureException
     {
-        if ( ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) ) )
-        {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_SITE_PACKAGING +
-                                              " project." );
+
+        	if ( ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) )&&
+        			! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
+                    ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&
+                    ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) ) &&
+                    ! POM_PACKAGING.equals( project.getPackaging(  ) ) )
+           {
+        		throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or " +
+                        LUTECE_PLUGIN_PACKAGING + " or " + LUTECE_SITE_PACKAGING +" or "+ LUTECE_SITE_PACKAGING + "project." );
+
         } else
         {
-            getLog(  ).info( "Assembly-site " + project.getArtifact(  ).getType(  ) + " artifact..." );
-            assemblySite(  );
+            getLog(  ).info( "Assembly " + project.getArtifact(  ).getType(  ) + " artifact..." );
+            assemblyProject(  );
         }
     }
 
-    private void assemblySite(  )
+    private void assemblyProject(  )
                        throws MojoExecutionException
     {
         // Explode the webapp in the temporary directory
-        explodeWebapp( explodedDirectory );
-        explodeConfigurationFiles( explodedDirectory );
-
-        // put the timestamp in the assembly name
-        if ( ArtifactUtils.isSnapshot( project.getVersion(  ) ) )
-        {
-            DateFormat utcDateFormatter = new SimpleDateFormat( utcTimestampPattern );
-            String newVersion = utcDateFormatter.format( new Date(  ) );
-            finalName = StringUtils.replace( finalName, SNAPSHOT_PATTERN, newVersion );
-        }
+        explodeWebapp( webappDirectory );
+        explodeConfigurationFiles( webappDirectory );
 
         // Make a war from the exploded directory
         File warFile = new File( outputDirectory, finalName + ".war" );
@@ -170,12 +154,11 @@ public class AssemblySiteMojo
 
         try
         {
-            if ( explodedDirectory.exists(  ) )
+            if ( webappDirectory.exists(  ) )
             {
                 archiver.getArchiver(  )
-                        .addDirectory( explodedDirectory, PACKAGE_WEBAPP_INCLUDES, PACKAGE_WEBAPP_RESOURCES_EXCLUDES );
+                        .addDirectory( webappDirectory);
             }
-
             archiver.createArchive( session, project, archive );
         } catch ( Exception e )
         {

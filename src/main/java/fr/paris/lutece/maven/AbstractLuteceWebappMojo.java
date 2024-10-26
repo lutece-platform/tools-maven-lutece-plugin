@@ -69,112 +69,105 @@ import org.eclipse.aether.repository.RemoteRepository;
 public abstract class AbstractLuteceWebappMojo
     extends AbstractLuteceMojo
 {
-	
+
     /**
      * The directory containing the local, user-specific configuration files.
-     *
      */
-	@Parameter( 
+	@Parameter(
+			property="localConfDirectory",
             defaultValue = "${user.home}/lutece/conf/${project.artifactId}")
     protected File localConfDirectory;
 
     /**
      * The set of artifacts required by this project, including transitive
      * dependencies.
-     *
      */
-    @Parameter( 
+    @Parameter(
             defaultValue = "${project.artifacts}",
-            required = true, 
+            required = true,
             readonly = true)
     protected Set<Artifact> artifacts;
-
     /**
-     * The unarchiver.
-     *
+     * The Repository System Session
      */
-  //  @Component ( role = org.codehaus.plexus.archiver.UnArchiver.class, hint = "zip" )
-    @Inject
-    protected ZipUnArchiver unArchiver;
-    
-    @Inject
-    protected ArtifactHandlerManager artifactHandlerManager;
-    
-    @Inject
-    protected RepositorySystem repoSystem;
-
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     protected RepositorySystemSession repoSession;
-
+    /**
+     * The remote Project Repositories
+     */
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true)
     protected List<RemoteRepository> remoteProjectRepositories;
+
+    /**
+     * The local repository.
+     */
+    @Parameter(
+            property = "localRepository")
+    protected org.apache.maven.artifact.repository.ArtifactRepository localRepository;
+
+    /**
+     * The remote repositories.
+     */
+    @Parameter(
+    		property = "project.remoteArtifactRepositories")
+    protected java.util.List<ArtifactRepository> remoteRepositories;
+
+    /**
+     * The directory where to explode the test webapp.
+     */
+    @Parameter(
+    		property = "testWebappDirectory",
+    		defaultValue = "${project.build.directory}/lutece" )
+    protected File testWebappDirectory;
+
+    /**
+     * The directory where to explode the  webapp.
+     */
+    @Parameter(
+    		property = "webappDirectory",
+            defaultValue = "${project.build.directory}/${project.build.finalName}")
+    protected File webappDirectory;
+   /**
+    * The outdatedCheckPath
+    */
+    @Parameter(
+            defaultValue = "${WEB-INF/lib/}")
+    private String outdatedCheckPath;
+
+    /**
+     * The list of webResources we want to transfer.
+     */
+    @Parameter
+    private Resource[] webResources;
+
     /**
      * The artifact factory.
-     *
      */
     @Inject
     protected org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
 
     /**
      * The artifact resolver.
-     *
      */
     @Inject
     protected org.apache.maven.artifact.resolver.ArtifactResolver resolver;
-
     /**
-     * The local repository.
-     *
+     * The unarchiver.
      */
-    @Parameter( 
-            property = "localRepository")
-    protected org.apache.maven.artifact.repository.ArtifactRepository localRepository;
+    @Inject
+    protected ZipUnArchiver unArchiver;
 
-    /**
-     * The remote repositories.
-     *
-     */
-    @Parameter( 
-    		property = "project.remoteArtifactRepositories")
-    protected java.util.List<ArtifactRepository> remoteRepositories;
+    @Inject
+    protected ArtifactHandlerManager artifactHandlerManager;
+
+    @Inject
+    protected RepositorySystem repoSystem;
 
     /**
      * The artifact metadata source.
-     *
      */
     @Inject
     protected ArtifactMetadataSource metadataSource;
-
-    /**
-     * The directory where to explode the test webapp.
-     *
-     *
-     */
-    @Parameter( 
-    		property = "testWebappDirectory",
-    		defaultValue = "${project.build.directory}/lutece" )
-    protected File testWebappDirectory;
-    /**
-     * The directory where to explode the  webapp.
-     *
-     *
-     */
-    @Parameter( 
-    		property = "webappDirectory",
-            defaultValue = "${project.build.directory}/lutece")
-    protected File webappDirectory;
-   /**
-    * 
-    */
-    @Parameter( 
-            defaultValue = "${WEB-INF/lib/}")
-    private String outdatedCheckPath;
-    
-    /**
-     * The list of webResources we want to transfer.
-     */
-    @Parameter
-    private Resource[] webResources;
 
     /**
      * Creates an exploded webapp structure from the current project.
@@ -215,7 +208,7 @@ public abstract class AbstractLuteceWebappMojo
 
             // Copy third-party JARs
             copyThirdPartyJars( targetDir );
-            
+
             // Copy Build Config
             copyBuildConfig( targetDir );
 
@@ -375,7 +368,7 @@ public abstract class AbstractLuteceWebappMojo
             } else
             {
                 getLog(  )
-                    .warn( "Default configuration directory " + defaultConfDirectory.getAbsolutePath(  ) +
+                    .debug( "Default configuration directory " + defaultConfDirectory.getAbsolutePath(  ) +
                            " does not exist" );
             }
 
@@ -389,7 +382,7 @@ public abstract class AbstractLuteceWebappMojo
             } else
             {
                 getLog(  )
-                    .warn( "Local configuration directory " + localConfDirectory.getAbsolutePath(  ) +
+                    .debug( "Local configuration directory " + localConfDirectory.getAbsolutePath(  ) +
                            " does not exist" );
             }
         } catch ( IOException e )
@@ -503,7 +496,7 @@ public abstract class AbstractLuteceWebappMojo
                 public boolean include( Artifact artifact )
                 {
                     return ( "jar".equals( artifact.getType(  ) ) &&
-                           ( 
+                           (
                                Artifact.SCOPE_RUNTIME.equals( artifact.getScope(  ) ) ||
                                Artifact.SCOPE_COMPILE.equals( artifact.getScope(  ) )
                             ) );
@@ -610,7 +603,7 @@ public abstract class AbstractLuteceWebappMojo
      */
     protected Set<Artifact> filterArtifacts( ArtifactFilter filter )
     {
-        Set<Artifact> result = new HashSet<Artifact>(  );
+        Set<Artifact> result = new HashSet<>(  );
 
         for ( Artifact artifact : artifacts )
         {
@@ -666,25 +659,25 @@ public abstract class AbstractLuteceWebappMojo
 
         return new File( mp.getBuild(  ).getDirectory(  ) );
     }
-    
+
     protected void copyBuildConfig( File targetDir ) throws MojoExecutionException
     {
         Set<Artifact> artifactSet = filterArtifacts( a -> ARTIFACT_BUILD_CONFIG.contentEquals( a.getArtifactId( ) ) );
-        
+
         if ( artifactSet == null || artifactSet.isEmpty(  ) || artifactSet.size(  ) > 1 )
         {
             throw new MojoExecutionException( "Project \"" + project.getName(  ) +
                                               "\" must have exactly one dependency named " + ARTIFACT_BUILD_CONFIG );
         }
         Artifact buildConfig = artifactSet.iterator( ).next( );
-        
+
         Path sqlDir = Paths.get( targetDir.getAbsolutePath( ), WEB_INF_SQL_PATH );
         sqlDir.toFile( ).mkdirs(  );
-        
+
         unArchiver.setSourceFile( buildConfig.getFile(  ) );
         unArchiver.setDestDirectory( sqlDir.toFile( ) );
         unArchiver.extract( BUILD_CONFIG_PATH + ANT_PATH, sqlDir.toFile( ) );
-        
+
         Path buildConfigDir = sqlDir.resolve( BUILD_CONFIG_PATH );
         Path antDir = buildConfigDir.resolve( ANT_PATH );
         try ( Stream<Path> stream = Files.walk( antDir ) )
@@ -715,7 +708,7 @@ public abstract class AbstractLuteceWebappMojo
         {
             throw new MojoExecutionException( "Error while copying build config ", e );
         }
-        
+
         try {
             org.codehaus.plexus.util.FileUtils.deleteDirectory( buildConfigDir.toFile( ) );
         }

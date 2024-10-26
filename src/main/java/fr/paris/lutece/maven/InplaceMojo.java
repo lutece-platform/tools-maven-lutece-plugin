@@ -60,7 +60,8 @@ public class InplaceMojo
      * @throws MojoExecutionException
      *             if an error occured while exploding the webapp.
      */
-    public void execute(  )
+    @Override
+	public void execute(  )
                  throws MojoExecutionException, MojoFailureException
     {
         if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) )

@@ -33,18 +33,16 @@
  */
 package fr.paris.lutece.maven;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.shared.model.fileset.FileSet;
-import org.apache.maven.shared.model.fileset.util.FileSetManager;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.shared.model.fileset.FileSet;
+import org.apache.maven.shared.model.fileset.util.FileSetManager;
 
 /**
  * Goal which cleans the build.
@@ -115,7 +113,8 @@ public class CleanMojo
      * @throws MojoExecutionException
      *             When
      */
-    public void execute(  )
+    @Override
+	public void execute(  )
                  throws MojoExecutionException
     {
         // for remove the global target before the modules target
@@ -150,10 +149,7 @@ public class CleanMojo
     {
         if ( ( filesets != null ) && ! filesets.isEmpty(  ) )
         {
-            for ( Iterator<FileSet> it = filesets.iterator(  ); it.hasNext(  ); )
-            {
-                FileSet fileset = (FileSet) it.next(  );
-
+            for (FileSet fileset : filesets) {
                 try
                 {
                     getLog(  ).info( "Deleting " + fileset );
@@ -245,7 +241,7 @@ public class CleanMojo
     {
         if ( filesets == null )
         {
-            filesets = new LinkedList<FileSet>(  );
+            filesets = new LinkedList<>(  );
         }
 
         filesets.add( fileset );

@@ -39,7 +39,6 @@ import javax.inject.Inject;
 
 import org.apache.maven.archiver.MavenArchiveConfiguration;
 import org.apache.maven.archiver.MavenArchiver;
-import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -72,7 +71,7 @@ import org.codehaus.plexus.archiver.jar.JarArchiver;
  * </ul>
  **/
 
-@Mojo( name = "war" , defaultPhase=LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE)
+@Mojo( name = "war" , defaultPhase=LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class WarMojo extends AbstractLuteceWebappMojo
 {
     /**

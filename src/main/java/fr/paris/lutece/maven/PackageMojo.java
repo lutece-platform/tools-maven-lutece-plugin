@@ -85,8 +85,8 @@ public class PackageMojo
      *
      */
     @Parameter(
-    		property = "basedir/webapp",
-            required = true )
+    		property = "webappSourceDirectory",
+            defaultValue = "${basedir}/webapp")
     private File webappSourceDirectory;
 
     /**

@@ -94,7 +94,8 @@ public class AssemblySiteMojo
      *
      */
     @Parameter(
-            property = "project.build.directory/project.build.finalName", required = true )
+    		property = "webappDirectory",
+            defaultValue = "${project.build.directory}/${project.build.finalName}")
     private File explodedDirectory;
 
     /**

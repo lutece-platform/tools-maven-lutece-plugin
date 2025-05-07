@@ -165,6 +165,7 @@ public class ExplodedMojo
 
             explodeWebapp( testWebappDirectory );
             explodeConfigurationFiles( testWebappDirectory );
+            explodeSqlFiles(testWebappDirectory, targetDatabaseVendor);
         }
     }
 

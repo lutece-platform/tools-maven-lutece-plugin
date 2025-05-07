@@ -34,6 +34,9 @@ core&quot; ou &quot;Lutece plugin&quot;.</p>
 <li><p><a href="site-assembly-mojo.html">lutece:site-assembly</a>
 : génère la distribution binaire pour un projet de site Lutèce.</p>
 </li>
+<li><p><a href="liquibase-sql-mojo.html">lutece:liquibase-sql</a>
+: Modifie les scripts SQL du composant en ajoutant des commentaires permettant que les scripts soient pris en compte par liquibase lors du démarrage de la webapp.</p>
+</li>
 </ul>
 </subsection>
 <subsection name="Utilisation"><p>Les instructions d'utilisation du plugin

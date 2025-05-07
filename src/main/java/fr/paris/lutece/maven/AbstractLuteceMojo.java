@@ -37,7 +37,8 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.execution.MavenSession;
@@ -189,6 +190,15 @@ public abstract class AbstractLuteceMojo
 
     protected static final String BUILD_CONFIG_PATH = "build-config/";
     protected static final String ANT_PATH = "ant/";
+
+    protected static final String WEB_INF_CLASSES_SQL_PATH = "WEB-INF/classes/sql/";
+    protected static final String WEB_INF_DB_PROPERTIES_PATH = "WEB-INF/conf/db.properties";
+    protected static final String WEB_INF_BUILD_PROPERTIES_PATH = "WEB-INF/sql/build.properties";
+    protected static final String DATABASE_VENDOR_NONE = "none";
+    protected static final String DATABASE_VENDOR_AUTO = "auto";
+    protected static final Collection<String> DATABASE_VENDORS = Arrays.asList("hsqldb", "mysql", "oracle", "postgresql");
+
+
 
     //the path to the site directory
     protected static final String WEB_INF_DOC_XML_PATH = "doc/xml/";

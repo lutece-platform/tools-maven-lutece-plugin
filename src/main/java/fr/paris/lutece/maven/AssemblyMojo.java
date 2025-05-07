@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Arrays;
 
 import javax.inject.Inject;
 
@@ -84,7 +85,7 @@ public class AssemblyMojo
     private static final String WEB_INF_CLASSES_PATH = "WEB-INF/classes/";
     private static final String JUNIT = "junit";
     private static final String SERVELT_API = "servlet-api";
-
+   
     /**
      * The directory containing the site resource files.
      *

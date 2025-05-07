@@ -61,6 +61,8 @@ import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
+import fr.paris.lutece.utils.sql.SqlRegexpHelper;
+import java.util.function.Function;
 
 /**
  * Abstracts functionnality common to mojos that create a Lutece webapp from
@@ -127,7 +129,24 @@ public abstract class AbstractLuteceWebappMojo
     		property = "webappDirectory",
             defaultValue = "${project.build.directory}/${project.build.finalName}")
     protected File webappDirectory;
-   /**
+    
+    /**
+     * When used, the name of the database vendor.
+     * 
+     * Authorized value are:
+     * <ul>
+     * <li>hsqldb
+     * <li>mysql
+     * <li>oracle
+     * <li>postgresql
+     * <li>none : does not process anything (default)
+     * <li>auto : will try to determine behaviour from contents of db.properties
+     * </ul>
+     */
+    @Parameter(property = "targetDatabaseVendor", defaultValue = DATABASE_VENDOR_NONE)
+    protected String targetDatabaseVendor;
+   
+    /**
     * The outdatedCheckPath
     */
     @Parameter(
@@ -139,6 +158,7 @@ public abstract class AbstractLuteceWebappMojo
      */
     @Parameter
     private Resource[] webResources;
+  
 
     /**
      * The artifact factory.
@@ -716,5 +736,57 @@ public abstract class AbstractLuteceWebappMojo
         {
             throw new MojoExecutionException( "Error while cleaning build config ", e );
         }
+    }
+
+
+   
+    /**
+     * explode sql files in WEB-INF/classes/sql directory
+     * @param explodedDirectory 
+     * @param targetDatabaseVendor
+     * @throws MojoExecutionException
+     */
+    protected void explodeSqlFiles(File explodedDirectory, String targetDatabaseVendor) throws MojoExecutionException
+    {
+        // duplicate SQL files in target WAR classpath for liquibase
+        try
+        {
+            File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
+            File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
+            // we allow explicit override of build.properties location with this system property
+            File dbProperties = new File(explodedDirectory, WEB_INF_DB_PROPERTIES_PATH);
+            File buildProperties = new File(explodedDirectory, WEB_INF_BUILD_PROPERTIES_PATH);
+            String buildPropertiesOverride = System.getProperty("liquibase.override.build.properties");
+            if (buildPropertiesOverride != null)
+                buildProperties = new File(buildPropertiesOverride);
+            Function<String, String> linefilter = null;
+            if (targetDatabaseVendor != null && !DATABASE_VENDOR_NONE.equals(targetDatabaseVendor))
+            {
+                String dbVendor = null;
+                if (DATABASE_VENDOR_AUTO.equals(targetDatabaseVendor))
+                    dbVendor = SqlRegexpHelper.findDbName(dbProperties);
+                else if (DATABASE_VENDORS.contains(targetDatabaseVendor))
+                    dbVendor = targetDatabaseVendor;
+                else
+                    throw new IllegalArgumentException("Unknown targetDatabaseVendor : '" + targetDatabaseVendor + "'");
+                SqlRegexpHelper sqlHelper = new SqlRegexpHelper(buildProperties, dbVendor);
+                linefilter = sqlHelper::filter;
+                getLog().info("Processing SQL files with target " + dbVendor);
+            } 
+            getLog().info("Copying SQL files into " + WEB_INF_CLASSES_SQL_PATH);
+            boolean needRuntimeBuildProperties = linefilter == null;// no filter here => we have to do it at run-time
+            // we do not use copyDirectoryStructure since we have specific needs
+            FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir,
+                    f -> (f.getName().equals("build.properties") && needRuntimeBuildProperties)
+                            || (f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 && LiquiBaseSqlMojo.isTaggedWithLiquibase(f)),
+                    linefilter);
+        } catch (Exception e)
+        {
+            // Use the same catch block for all IOExceptions, presumably the
+            // exception's message will be clear enough.
+            throw new MojoExecutionException("Error while copying resources", e);
+        }
+
+
     }
 }

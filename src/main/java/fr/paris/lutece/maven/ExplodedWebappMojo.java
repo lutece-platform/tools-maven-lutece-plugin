@@ -95,6 +95,6 @@ public class ExplodedWebappMojo extends AbstractLuteceWebappMojo
 
         explodeWebapp( webappDirectory );
         explodeConfigurationFiles( webappDirectory );
-
+        explodeSqlFiles(webappDirectory, targetDatabaseVendor);
     }
 }

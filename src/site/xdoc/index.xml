@@ -24,7 +24,12 @@
 				<li><a href="assembly-mojo.html">lutece:assembly</a> : builds binary zip file and source zip file
    from a Lutece core or plugin.</li>
 				<li><a href="site-assembly-mojo.html">lutece:site-assembly</a> : builds a WAR file from a set
-    of Lutece artifacts.</li>
+	of Lutece artifacts.</li>
+			 <li><a href="liquibase-sql-mojo.html">lutece:liquibase-sql</a>
+: Modifies the component's SQL scripts by adding comments so that the scripts are taken into account by Liquibase when the webapp starts.
+</li>
+			 
+			 
 			 </ul>
 			  </subsection>
 			  <subsection name="Usage">

@@ -162,6 +162,7 @@ public class ExplodedLiteMojo extends AbstractLuteceWebappMojo {
         // PluginDataService.generatePluginsDataFile(testWebappDirectory.getAbsolutePath());
         explodeLuteceWebapp(webappDirectory);
         explodeConfigurationFiles(webappDirectory);
+        explodeSqlFiles(webappDirectory, targetDatabaseVendor);
     }
 
     /**

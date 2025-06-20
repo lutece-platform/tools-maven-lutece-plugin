@@ -142,7 +142,8 @@ public class WarMojo extends AbstractLuteceWebappMojo
         // Explode the webapp in the temporary directory
         explodeWebapp( webappDirectory );
         explodeConfigurationFiles( webappDirectory );
-
+        explodeSqlFiles(webappDirectory, targetDatabaseVendor);
+        
         // Make a war from the exploded directory
         File warFile = new File( outputDirectory, finalName + ".war" );
 

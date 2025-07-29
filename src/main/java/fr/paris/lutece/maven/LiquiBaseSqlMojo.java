@@ -195,7 +195,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             if (!CORE.equals(pluginName))
             {
                 getLog().info("path " + path);
-                SqlPathInfo sqlPath = SqlPathInfo.parse(path.toString().substring(6));// remove leading "./src/"
+                SqlPathInfo sqlPath = SqlPathInfo.parse(normalizeWebappPath(path.toString()).substring(6));// remove leading "./src/"
                 if (!sqlPath.isCreate())
                 {
                     if (sqlPath.getDstVersion() != null
@@ -243,5 +243,64 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         Path outputPath = Paths.get(subPathSqlFile);
         Files.createDirectories(outputPath.getParent());
         return outputPath;
+    }
+    
+    /**
+     * Normalizes the Webapp Path
+     *
+     * @param strPath
+     *            The path to normalize
+     * @return The normalized path
+     */
+    private static String normalizeWebappPath( String strPath )
+    {
+        String strNormalized = strPath;
+
+        // For windows, remove the leading \
+        if ( ( strNormalized.length( ) > 3 ) && ( strNormalized.indexOf( ':' ) == 2 ) )
+        {
+            strNormalized = strNormalized.substring( 1 );
+        }
+
+        // convert Windows path separator if present
+        strNormalized = substitute( strNormalized, "/", "\\" );
+
+        // remove the ending separator if present
+        if ( strNormalized.endsWith( "/" ) )
+        {
+            strNormalized = strNormalized.substring( 0, strNormalized.length( ) - 1 );
+        }
+
+        return strNormalized;
+    }
+    
+    /**
+     * This function substitutes all occurences of a given bookmark by a given value
+     *
+     * @param strSource
+     *            The input string that contains bookmarks to replace
+     * @param strValue
+     *            The value to substitute to the bookmark
+     * @param strBookmark
+     *            The bookmark name
+     * @return The output string.
+     */
+    public static String substitute( String strSource, String strValue, String strBookmark )
+    {
+        StringBuilder strResult = new StringBuilder( );
+        int nPos = strSource.indexOf( strBookmark );
+        String strModifySource = strSource;
+
+        while ( nPos != -1 )
+        {
+            strResult.append( strModifySource.substring( 0, nPos ) );
+            strResult.append( strValue );
+            strModifySource = strModifySource.substring( nPos + strBookmark.length( ) );
+            nPos = strModifySource.indexOf( strBookmark );
+        }
+
+        strResult.append( strModifySource );
+
+        return strResult.toString( );
     }
 }

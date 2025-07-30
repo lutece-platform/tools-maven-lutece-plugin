@@ -76,7 +76,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     private static final String CORE = "core";
     public static final String SQL_EXT = ".sql";
     private static final String XML_EXT = ".xml";
-    private static final String LIQUIBASE_SQL_HEADER = "--liquibase formatted sql";
+    private static final String LIQUIBASE_SQL_HEADER = "-- liquibase formatted sql";
     private static final String EOL = "\n";
     private static final String SQL_DIRECTORY = "./src/sql";
     private static final String TARGET_DIRECTORY = "./target/liquibasesql/";
@@ -210,8 +210,8 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             {
                 StringBuilder result = new StringBuilder();
                 result.append(LIQUIBASE_SQL_HEADER).append(EOL);
-                result.append("--changeset ").append(pluginName).append(":").append(path.getFileName()).append(EOL);
-                result.append("--preconditions onFail:MARK_RAN onError:WARN").append(EOL);
+                result.append("-- changeset ").append(pluginName).append(":").append(path.getFileName()).append(EOL);
+                result.append("-- preconditions onFail:MARK_RAN onError:WARN").append(EOL);
                 result.append(content);
                 Path outputPath = generateOutputPath(path);
                 getLog().info("Writing tag+content to file " + outputPath);

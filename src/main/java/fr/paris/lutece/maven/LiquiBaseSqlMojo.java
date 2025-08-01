@@ -77,6 +77,8 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     public static final String SQL_EXT = ".sql";
     private static final String XML_EXT = ".xml";
     private static final String LIQUIBASE_SQL_HEADER = "-- liquibase formatted sql";
+    private static final String LIQUIBASE_SQL_HEADER_2 = "--liquibase formatted sql";
+
     private static final String EOL = "\n";
     private static final String SQL_DIRECTORY = "./src/sql";
     private static final String TARGET_DIRECTORY = "./target/liquibasesql/";
@@ -167,7 +169,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
      */
     public static boolean isTaggedWithLiquibase(String content)
     {
-        return content.startsWith(LIQUIBASE_SQL_HEADER);
+        return content.startsWith(LIQUIBASE_SQL_HEADER) || content.startsWith(LIQUIBASE_SQL_HEADER_2);
     }
 
     public static boolean isTaggedWithLiquibase(File candidate)

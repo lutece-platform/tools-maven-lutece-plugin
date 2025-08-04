@@ -41,6 +41,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -218,7 +220,14 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
                 Path outputPath = generateOutputPath(path);
                 getLog().info("Writing tag+content to file " + outputPath);
                 Files.write(outputPath, result.toString().getBytes(StandardCharsets.UTF_8));
-            } else
+            }else if(needsFixing(content))
+            {
+            	String fixedContent= fixLiquibaseComments(content);
+                Path outputPath = generateOutputPath(path);
+                Files.write(outputPath, fixedContent.getBytes(StandardCharsets.UTF_8));
+                getLog().info("Fixing formatting in Liquibase file: " + path);
+            }
+            else
             {
                 getLog().info("File already in Liquibase format, ignoring: " + path);
             }
@@ -275,6 +284,39 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
         return strNormalized;
     }
+    /**
+     * fix Liquibase Comments
+     * @param content the content to fix
+     * @return the content fixed
+     */
+    private String fixLiquibaseComments(String content)
+    {
+        return content
+                .replaceAll("(?m)^--(?=liquibase formatted sql)", "-- ")
+                .replaceAll("(?m)^--(?=changeset)", "-- ")
+                .replaceAll("(?m)^--(?=preconditions)", "-- ");
+    }
+    /**
+     * Checks whether the content contains incorrectly formatted Liquibase comments.
+     * This typically means missing a space after the double dash "--".
+     *
+     * The method looks for:
+     * <ul>
+     *   <li>--liquibase formatted sql</li>
+     *   <li>--changeset</li>
+     *   <li>--preconditions</li>
+     * </ul>
+     *
+     * @param content The content of the SQL file
+     * @return true if formatting needs to be fixed; false if already properly formatted
+     */
+    private boolean needsFixing(String content)
+    {
+        Pattern pattern = Pattern.compile("(?m)^--(?=liquibase formatted sql|changeset|preconditions)");
+        Matcher matcher = pattern.matcher(content);
+        return matcher.find();
+    }
+
     
     /**
      * This function substitutes all occurences of a given bookmark by a given value

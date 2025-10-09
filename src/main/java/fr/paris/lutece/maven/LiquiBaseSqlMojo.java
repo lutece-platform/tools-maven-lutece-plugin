@@ -101,7 +101,6 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     {
         try
         {
-            PluginVersion.setAcceptSnapshots(true);// don't fail because of snapshots
             processPluginXmls();
             processSqlFiles();
             if (!CORE.equals(pluginName))
@@ -210,7 +209,11 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             // we suppose that all SQL files are UTF-8.
             // if that's not the case, we need a way to get that info for EACH input file
             String content = readString(path);
-            if (!isTaggedWithLiquibase(content))
+            if(content.trim().isEmpty()||!containsSqlOrders(content))
+            {
+                getLog().info("Ignoring file without SQL commands: " + path);
+            }
+            else if (!isTaggedWithLiquibase(content))
             {
                 StringBuilder result = new StringBuilder();
                 result.append(LIQUIBASE_SQL_HEADER).append(EOL);
@@ -346,5 +349,24 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         strResult.append( strModifySource );
 
         return strResult.toString( );
+    }
+
+
+    /**
+     * Checks if the given text contains SQL orders like SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, TRUNCATE, GRANT, REVOKE.
+     * The check is case-insensitive and looks for whole words only.
+     *
+     * @param content The text to check
+     * @return true if any SQL order is found; false otherwise
+     */
+    public static boolean containsSqlOrders(String content) {
+        // Liste de mots-clés SQL à rechercher
+        String regex = "\\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE)\\b";
+        
+        // Insensible à la casse
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(content);
+
+        return matcher.find();
     }
 }

@@ -39,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +47,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -61,6 +64,8 @@ import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.w3c.dom.Document;
+
 import fr.paris.lutece.utils.sql.SqlRegexpHelper;
 import java.util.function.Function;
 
@@ -751,6 +756,8 @@ public abstract class AbstractLuteceWebappMojo
         // duplicate SQL files in target WAR classpath for liquibase
         try
         {
+
+            List<String> listLiquibaseFileErrors = new ArrayList<>();
             File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
             File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
             // we allow explicit override of build.properties location with this system property
@@ -778,8 +785,24 @@ public abstract class AbstractLuteceWebappMojo
             // we do not use copyDirectoryStructure since we have specific needs
             FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir,
                     f -> (f.getName().equals("build.properties") && needRuntimeBuildProperties)
-                            || (f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 && LiquiBaseSqlMojo.isTaggedWithLiquibase(f)),
+                            || (f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 &&    LiquiBaseSqlMojo.isTaggedWithLiquibase(f, listLiquibaseFileErrors)),
                     linefilter);
+
+
+
+            if (!listLiquibaseFileErrors.isEmpty())
+            {
+                getLog().warn("The following SQL files are not tagged for Liquibase and have not been copied to " + WEB_INF_CLASSES_SQL_PATH + " :");
+                for (String filePath : listLiquibaseFileErrors)
+                {
+                    getLog().info(" - " + filePath);
+                }
+            }
+
+            generateLiquibaseState(listLiquibaseFileErrors, explodedDirectory);
+
+            
+
         } catch (Exception e)
         {
             // Use the same catch block for all IOExceptions, presumably the
@@ -789,4 +812,52 @@ public abstract class AbstractLuteceWebappMojo
 
 
     }
+
+
+   /**
+     * generate microprofile-config.properties file indicating if liquibase can run or not
+     * @param listLiquibaseFileErrors
+     * @param explodedDirectory
+     * @throws MojoExecutionException
+     */ 
+  private void generateLiquibaseState(List<String> listLiquibaseFileErrors, File explodedDirectory) throws MojoExecutionException
+    {
+        
+        
+        try
+        {
+            File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
+            File liquibasePropertiesFile = new File(lq_sqlTargetDir, LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE);
+            if (liquibasePropertiesFile.exists())
+            {
+                liquibasePropertiesFile.delete();
+            }
+               getLog().info("Generating " + LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE + " file");
+                StringBuilder sb = new StringBuilder();
+                sb.append("# Generated file - do not edit\n");
+                sb.append("liquibase.readyToRun="+listLiquibaseFileErrors.isEmpty()+"\n");
+                sb.append("# Lists SQL files not managed by Liquibase\n");
+                sb.append("liquibase.fileErrors=");
+                if (!listLiquibaseFileErrors.isEmpty())
+                {
+                    listLiquibaseFileErrors.forEach(x-> sb.append(x).append(","));
+                    //remove last ,
+                    if (sb.charAt(sb.length() - 1) == ',')
+                    {
+                        sb.deleteCharAt(sb.length() - 1);
+                    }
+                }
+              sb.append("\n"); 
+             
+              Files.write(liquibasePropertiesFile.toPath(), sb.toString().getBytes());    
+        }
+        
+        catch (Exception e)
+        {
+            throw new MojoExecutionException("Error while generating " + LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE + " file", e);
+        }
+    }
+
+
+    
 }

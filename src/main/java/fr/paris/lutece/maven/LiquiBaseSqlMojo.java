@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,6 +76,7 @@ requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME
 public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 {
 
+    public static final String MICROPROFILE_CONFIG_PROPERTIES_FILE ="microprofile-config.properties";   
     private static final String CORE = "core";
     public static final String SQL_EXT = ".sql";
     private static final String XML_EXT = ".xml";
@@ -85,7 +87,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     private static final String SQL_DIRECTORY = "./src/sql";
     private static final String TARGET_DIRECTORY = "./target/liquibasesql/";
     private static final String PLUGIN_CONF_DIRECTORY = "./webapp/WEB-INF/plugins";
-
+   
     /**
      * Dry run creates files in target instead of replacing
      */
@@ -143,6 +145,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     private static final Predicate<? super Path> sqlFileFilter = path -> fileFilter(path, SQL_EXT);
     private static final Predicate<? super Path> pluginFileFilter = path -> fileFilter(path, XML_EXT);
 
+
     private static final boolean fileFilter(Path path, String ext)
     {
         try
@@ -173,16 +176,24 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         return content.startsWith(LIQUIBASE_SQL_HEADER) || content.startsWith(LIQUIBASE_SQL_HEADER_2);
     }
 
-    public static boolean isTaggedWithLiquibase(File candidate)
+    public static boolean isTaggedWithLiquibase(File candidate,List<String> listFileErrors)
     {
         try (BufferedReader reader = Files.newBufferedReader(candidate.toPath());)
         {
-            return isTaggedWithLiquibase(reader.readLine());
+            boolean isTaggedWithLiquibase = isTaggedWithLiquibase(reader.readLine());
+            //add to error list if not tagged
+            if(!isTaggedWithLiquibase)
+            {
+                listFileErrors.add(candidate.getAbsolutePath());
+            }
+            return isTaggedWithLiquibase;
         } catch (Exception e)
         {
             // we do not care about the exact nature of the problem
             // if we could not read it, we just do not include it
-            return false;
+              listFileErrors.add(candidate.getPath()); 
+              return false;
+          
         }
     }
 
@@ -369,4 +380,12 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
         return matcher.find();
     }
+
+  public static boolean isFileManagedByLiquibase(File candidate ) {
+
+      SqlPathInfo info = SqlPathInfo.parse(candidate.getPath());
+      return info!=null && info.getSrcVersion()!=null && info.getDstVersion()!=null;
+      
+    }
+
 }

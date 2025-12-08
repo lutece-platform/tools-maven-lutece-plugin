@@ -758,8 +758,8 @@ public abstract class AbstractLuteceWebappMojo
         {
 
             List<String> listLiquibaseFileErrors = new ArrayList<>();
-            File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
-            File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
+            final File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
+            final File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
             // we allow explicit override of build.properties location with this system property
             File dbProperties = new File(explodedDirectory, WEB_INF_DB_PROPERTIES_PATH);
             File buildProperties = new File(explodedDirectory, WEB_INF_BUILD_PROPERTIES_PATH);
@@ -785,7 +785,7 @@ public abstract class AbstractLuteceWebappMojo
             // we do not use copyDirectoryStructure since we have specific needs
             FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir,
                     f -> (f.getName().equals("build.properties") && needRuntimeBuildProperties)
-                            || (f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 &&    LiquiBaseSqlMojo.isTaggedWithLiquibase(f, listLiquibaseFileErrors)),
+                            || (f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 &&  LiquiBaseSqlMojo.isFileManagedByLiquibase(f,lq_sqlSourceDir.getAbsolutePath()) && LiquiBaseSqlMojo.isTaggedWithLiquibase(f, listLiquibaseFileErrors,lq_sqlSourceDir.getAbsolutePath())),
                     linefilter);
 
 
@@ -826,8 +826,9 @@ public abstract class AbstractLuteceWebappMojo
         
         try
         {
-            File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
-            File liquibasePropertiesFile = new File(lq_sqlTargetDir, LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE);
+          
+            File lq_propertiesFileDir = new File(explodedDirectory, WEB_INF_CLASSES_LIQUIBASE_PROPERTIES);
+            File liquibasePropertiesFile = new File(lq_propertiesFileDir, LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE);
             if (liquibasePropertiesFile.exists())
             {
                 liquibasePropertiesFile.delete();
@@ -849,7 +850,7 @@ public abstract class AbstractLuteceWebappMojo
                 }
               sb.append("\n"); 
              
-              Files.write(liquibasePropertiesFile.toPath(), sb.toString().getBytes());    
+              Files.write(lq_propertiesFileDir.toPath(), sb.toString().getBytes());    
         }
         
         catch (Exception e)

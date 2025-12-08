@@ -176,7 +176,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         return content.startsWith(LIQUIBASE_SQL_HEADER) || content.startsWith(LIQUIBASE_SQL_HEADER_2);
     }
 
-    public static boolean isTaggedWithLiquibase(File candidate,List<String> listFileErrors)
+    public static boolean isTaggedWithLiquibase(File candidate,List<String> listFileErrors,String strBasePath)
     {
         try (BufferedReader reader = Files.newBufferedReader(candidate.toPath());)
         {
@@ -184,14 +184,14 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             //add to error list if not tagged
             if(!isTaggedWithLiquibase)
             {
-                listFileErrors.add(candidate.getAbsolutePath());
+                listFileErrors.add(getAbsoluteSqlFilePath(candidate, strBasePath));
             }
             return isTaggedWithLiquibase;
         } catch (Exception e)
         {
             // we do not care about the exact nature of the problem
             // if we could not read it, we just do not include it
-              listFileErrors.add(candidate.getPath()); 
+              listFileErrors.add(getAbsoluteSqlFilePath(candidate, strBasePath)); 
               return false;
           
         }
@@ -381,11 +381,23 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         return matcher.find();
     }
 
-  public static boolean isFileManagedByLiquibase(File candidate ) {
+  public static boolean isFileManagedByLiquibase(File candidate,String strBasePath ) {
 
-      SqlPathInfo info = SqlPathInfo.parse(candidate.getPath());
+      SqlPathInfo info = SqlPathInfo.parse( getAbsoluteSqlFilePath(candidate, strBasePath));
       return info!=null && info.getSrcVersion()!=null && info.getDstVersion()!=null;
       
     }
+
+
+
+    /** 
+     * get the absolute sql file path from the candidate file
+     * @param candidate
+     * @param strBasePath
+     * @return
+     */
+   private static String getAbsoluteSqlFilePath(File candidate,String strBasePath ) {
+         return candidate.getPath().substring(strBasePath.length()-3 );
+   } 
 
 }

@@ -383,8 +383,8 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
   public static boolean isFileManagedByLiquibase(File candidate,String strBasePath ) {
 
-      SqlPathInfo info = SqlPathInfo.parse( getAbsoluteSqlFilePath(candidate, strBasePath));
-      return info!=null && info.getSrcVersion()!=null && info.getDstVersion()!=null;
+    
+      return  SqlPathInfo.parse( getAbsoluteSqlFilePath(candidate, strBasePath)) !=null;
       
     }
 

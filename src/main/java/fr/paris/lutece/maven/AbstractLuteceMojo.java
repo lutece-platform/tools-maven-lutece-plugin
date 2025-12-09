@@ -192,7 +192,7 @@ public abstract class AbstractLuteceMojo
     protected static final String ANT_PATH = "ant/";
 
     protected static final String WEB_INF_CLASSES_SQL_PATH = "WEB-INF/classes/sql/";
-    protected static final String WEB_INF_CLASSES_LIQUIBASE_PROPERTIES = "WEB-INF/classes/META-INF/";
+    protected static final String META_INF_DIRECTORY = "WEB-INF/classes/META-INF/";
     protected static final String WEB_INF_DB_PROPERTIES_PATH = "WEB-INF/conf/db.properties";
     protected static final String WEB_INF_BUILD_PROPERTIES_PATH = "WEB-INF/sql/build.properties";
     protected static final String DATABASE_VENDOR_NONE = "none";

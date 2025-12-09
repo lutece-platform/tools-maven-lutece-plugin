@@ -792,10 +792,10 @@ public abstract class AbstractLuteceWebappMojo
 
             if (!listLiquibaseFileErrors.isEmpty())
             {
-                getLog().warn("The following SQL files are not tagged for Liquibase and have not been copied to " + WEB_INF_CLASSES_SQL_PATH + " :");
+                getLog().error("The following SQL files are not tagged for Liquibase and have not been copied to " + WEB_INF_CLASSES_SQL_PATH + " :");
                 for (String filePath : listLiquibaseFileErrors)
                 {
-                    getLog().info(" - " + filePath);
+                    getLog().error(" - " + filePath);
                 }
             }
 
@@ -827,13 +827,17 @@ public abstract class AbstractLuteceWebappMojo
         try
         {
           
-            File lq_propertiesFileDir = new File(explodedDirectory, WEB_INF_CLASSES_LIQUIBASE_PROPERTIES);
+            File lq_propertiesFileDir = new File(explodedDirectory, META_INF_DIRECTORY);
+            if(!lq_propertiesFileDir.exists()) 
+            {
+                lq_propertiesFileDir.mkdirs();
+            }
             File liquibasePropertiesFile = new File(lq_propertiesFileDir, LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE);
             if (liquibasePropertiesFile.exists())
             {
                 liquibasePropertiesFile.delete();
             }
-               getLog().info("Generating " + LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE + " file");
+               getLog().info("Generating file " +  explodedDirectory +META_INF_DIRECTORY + LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE );
                 StringBuilder sb = new StringBuilder();
                 sb.append("# Generated file - do not edit\n");
                 sb.append("liquibase.readyToRun="+listLiquibaseFileErrors.isEmpty()+"\n");
@@ -850,7 +854,7 @@ public abstract class AbstractLuteceWebappMojo
                 }
               sb.append("\n"); 
              
-              Files.write(lq_propertiesFileDir.toPath(), sb.toString().getBytes());    
+              Files.write(liquibasePropertiesFile.toPath(), sb.toString().getBytes());    
         }
         
         catch (Exception e)

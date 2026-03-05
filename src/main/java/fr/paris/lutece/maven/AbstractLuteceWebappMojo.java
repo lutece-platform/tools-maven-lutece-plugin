@@ -47,8 +47,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -64,7 +62,6 @@ import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.w3c.dom.Document;
 
 import fr.paris.lutece.utils.sql.SqlRegexpHelper;
 import java.util.function.Function;
@@ -438,8 +435,14 @@ public abstract class AbstractLuteceWebappMojo
         if ( LUTECE_CORE_TYPE.equals( project.getArtifactId(  ) ) )
         {
             return;
-        } else if ( ( cores == null ) || cores.isEmpty(  ) || ( cores.size(  ) > 1 ) )
+        }
+        else if (( cores == null ) || cores.isEmpty(  ) )
         {
+        	// Case where the project is built without lutece-core
+        	return;
+        }
+        else if (  cores.size(  ) > 1  )
+        { 	
             throw new MojoExecutionException( "Project \"" + project.getName(  ) +
                                               "\" must have exactly one dependency of type " + LUTECE_CORE_TYPE );
         }

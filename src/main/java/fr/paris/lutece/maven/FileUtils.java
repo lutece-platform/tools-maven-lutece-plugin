@@ -33,15 +33,12 @@
  */
 package fr.paris.lutece.maven;
 
-import org.apache.commons.io.IOUtils;
-
 import org.codehaus.plexus.util.IOUtil;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -435,18 +432,10 @@ public class FileUtils
             throw new IOException( message );
         }
 
-        FileInputStream input = null;
-        FileOutputStream output = null;
-
-        try
+        try ( FileInputStream input = new FileInputStream( source );
+              FileOutputStream output = new FileOutputStream( destination ) )
         {
-            input = new FileInputStream( source );
-            output = new FileOutputStream( destination );
             IOUtil.copy( input, output );
-        } finally
-        {
-            IOUtil.close( input );
-            IOUtil.close( output );
         }
 
         if ( source.length(  ) != destination.length(  ) )
@@ -502,38 +491,23 @@ public class FileUtils
      */
     public static String readLastLine( String strFile )
     {
-        FileInputStream in = null;
-
-        try
+        File file = new File( strFile );
+        if ( !file.exists(  ) )
         {
-            in = new FileInputStream( strFile );
-        } catch ( FileNotFoundException e )
-        {
-            IOUtils.closeQuietly( in );
-
             return "";
         }
-
         String strLastLine = "";
-        BufferedReader br = new BufferedReader( new InputStreamReader( in ) );
-        String strTmp = null;
-
-        try
+        try ( BufferedReader br = new BufferedReader( new InputStreamReader( new FileInputStream( file ) ) ) )
         {
-            while ( br.ready(  ) )
+            String strTmp;
+            while ( ( strTmp = br.readLine(  ) ) != null )
             {
-                strTmp = br.readLine(  );
+                strLastLine = strTmp;
             }
         } catch ( IOException e )
         {
-            e.printStackTrace(  );
-        } finally
-        {
-            IOUtils.closeQuietly( in );
+            // silently return empty string on error
         }
-
-        strLastLine = strTmp;
-
         return strLastLine;
     }
 
@@ -544,18 +518,12 @@ public class FileUtils
      */
     public static void writeToFile( String strContent, String strFile )
     {
-        FileWriter fw = null;
-
-        try
+        try ( FileWriter fw = new FileWriter( strFile, false ) )
         {
-            fw = new FileWriter( strFile, false );
             fw.write( strContent );
         } catch ( IOException e )
         {
-            e.printStackTrace(  );
-        } finally
-        {
-            IOUtils.closeQuietly( fw );
+            // silent failure - callers do not expect exceptions
         }
     }
 }

@@ -84,14 +84,7 @@ public class ExplodedWebappMojo extends AbstractLuteceWebappMojo
                  throws MojoExecutionException, MojoFailureException
     {
     	 logBanner();
-        if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) )
-                   )
-        {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or " +
-                                              LUTECE_PLUGIN_PACKAGING + " or " + LUTECE_SITE_PACKAGING + " project." );
-        }
+        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING, LUTECE_SITE_PACKAGING );
 
         explodeWebapp( webappDirectory );
         explodeConfigurationFiles( webappDirectory );

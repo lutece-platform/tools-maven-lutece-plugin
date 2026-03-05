@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -314,6 +315,21 @@ public abstract class AbstractLuteceMojo
     public void enableLogging( Logger logger )
     {
         this.logger = logger;
+    }
+
+    protected void validatePackaging( String... allowedPackagings )
+                              throws MojoExecutionException
+    {
+        String packaging = project.getPackaging(  );
+        for ( String allowed : allowedPackagings )
+        {
+            if ( allowed.equals( packaging ) )
+            {
+                return;
+            }
+        }
+        throw new MojoExecutionException( "This goal can be invoked only on a " +
+                                          String.join( " or ", allowedPackagings ) + " project." );
     }
 
     public void logBanner() {

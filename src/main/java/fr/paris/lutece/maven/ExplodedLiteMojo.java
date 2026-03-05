@@ -86,14 +86,7 @@ public class ExplodedLiteMojo extends AbstractLuteceWebappMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         logBanner();
-        String packaging = project.getPackaging();
-
-        if (!isValidPackaging(packaging)) {
-            throw new MojoExecutionException("This goal can be invoked only on a " +
-                                              LUTECE_CORE_PACKAGING + ", " +
-                                              LUTECE_PLUGIN_PACKAGING + ", " +
-                                              LUTECE_SITE_PACKAGING + " project.");
-        }
+        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING, LUTECE_SITE_PACKAGING, POM_PACKAGING );
         executeProject();
     }
 
@@ -134,18 +127,6 @@ public class ExplodedLiteMojo extends AbstractLuteceWebappMojo {
         }
     }
 
-    /**
-     * Checks if the provided packaging type is valid for the Lutece projects.
-     *
-     * @param packaging the packaging type to validate.
-     * @return true if the packaging type is valid; false otherwise.
-     */
-    private boolean isValidPackaging(String packaging) {
-        return LUTECE_CORE_PACKAGING.equals(packaging) ||
-               LUTECE_PLUGIN_PACKAGING.equals(packaging) ||
-               LUTECE_SITE_PACKAGING.equals(packaging) ||
-               POM_PACKAGING.equals(packaging);
-    }
 
     /**
      * Executes the project-specific tasks.

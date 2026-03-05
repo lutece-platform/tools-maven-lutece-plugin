@@ -110,7 +110,7 @@ public class AssemblySiteMojo
      */
     @Parameter(
     		property = "jar.forceCreation",
-            defaultValue = "yyyyMMdd.HHmmss" )
+            defaultValue = "false" )
     private boolean forceCreation;
     
 
@@ -143,11 +143,7 @@ public class AssemblySiteMojo
 	public void execute(  )
                  throws MojoExecutionException, MojoFailureException
     {
-        if ( ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) ) )
-        {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_SITE_PACKAGING +
-                                              " project." );
-        } else
+        validatePackaging( LUTECE_SITE_PACKAGING );
         {
             getLog(  ).info( "Assembly-site " + project.getArtifact(  ).getType(  ) + " artifact..." );
             assemblySite(  );

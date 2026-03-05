@@ -100,7 +100,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
             required = true )
     protected File baseDirectory;
     private static final String JUNIT = "junit";
-    private static final String SERVELT_API = "servlet-api";
+    private static final String SERVLET_API = "servlet-api";
     protected static final String[] ASSEMBLY_WEBAPP_EXCLUDES_UPDATER =
             new String[]
     {
@@ -142,12 +142,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
     public void execute()
             throws MojoExecutionException, MojoFailureException
     {
-        if (!LUTECE_CORE_PACKAGING.equals(project.getPackaging())
-                && !LUTECE_PLUGIN_PACKAGING.equals(project.getPackaging()))
-        {
-            throw new MojoExecutionException("This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or "
-                    + LUTECE_PLUGIN_PACKAGING + " project.");
-        }
+        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING );
 
         getLog().info( "Version FROM : " + strDefinedFromVersion );
 
@@ -475,7 +470,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
                         && !Artifact.SCOPE_TEST.equals(a.getScope()) // for transitively dependencies artifact are not a good
                         // scope ( junit and servlet-api )
                         && !JUNIT.equals(a.getArtifactId())
-                        && !SERVELT_API.equals(a.getArtifactId()))
+                        && !SERVLET_API.equals(a.getArtifactId()))
                 {
                     result.add(a.getFile());
                 }

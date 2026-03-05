@@ -105,14 +105,7 @@ public class ExplodedMojo
                  throws MojoExecutionException, MojoFailureException
     {
     	 logBanner();
-        if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! POM_PACKAGING.equals( project.getPackaging(  ) ) )
-        {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or " +
-                                              LUTECE_PLUGIN_PACKAGING + " or " + LUTECE_SITE_PACKAGING + " project." );
-        }
+        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING, LUTECE_SITE_PACKAGING, POM_PACKAGING );
 
         if ( POM_PACKAGING.equals( project.getPackaging(  ) ) && project.isExecutionRoot(  ) )
         {
@@ -180,14 +173,7 @@ public class ExplodedMojo
     public void executeM2Mojo(  )
                        throws MojoExecutionException, MojoFailureException
     {
-        if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! POM_PACKAGING.equals( project.getPackaging(  ) ) )
-        {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or " +
-                                              LUTECE_PLUGIN_PACKAGING + " or " + LUTECE_SITE_PACKAGING + " project." );
-        }
+        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING, LUTECE_SITE_PACKAGING, POM_PACKAGING );
 
         if ( POM_PACKAGING.equals( project.getPackaging(  ) ) && project.isExecutionRoot(  ) )
         {
@@ -398,7 +384,7 @@ public class ExplodedMojo
                                            listeners );
         } catch ( ArtifactResolutionException e )
         {
-            e.printStackTrace(  );
+            getLog(  ).error( e );
         }
 
         // keep track of added reactor projects in order to avoid duplicates
@@ -415,10 +401,10 @@ public class ExplodedMojo
                                   localRepository );
             } catch ( ArtifactNotFoundException e )
             {
-                e.printStackTrace(  );
+                getLog(  ).error( e );
             } catch ( ArtifactResolutionException e )
             {
-                e.printStackTrace(  );
+                getLog(  ).error( e );
             }
 
             if ( emittedReactorProjectId.add( art.getGroupId(  ) + '-' + art.getArtifactId(  ) ) )

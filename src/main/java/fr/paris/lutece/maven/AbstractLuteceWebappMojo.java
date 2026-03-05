@@ -152,7 +152,7 @@ public abstract class AbstractLuteceWebappMojo
     * The outdatedCheckPath
     */
     @Parameter(
-            defaultValue = "${WEB-INF/lib/}")
+            defaultValue = "WEB-INF/lib/")
     private String outdatedCheckPath;
 
     /**

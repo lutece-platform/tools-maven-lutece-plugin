@@ -88,7 +88,7 @@ public class WarMojo extends AbstractLuteceWebappMojo
      */
     @Parameter(
     		property = "jar.forceCreation",
-            defaultValue = "yyyyMMdd.HHmmss" )
+            defaultValue = "false" )
     private boolean forceCreation;
 
     /**
@@ -120,16 +120,7 @@ public class WarMojo extends AbstractLuteceWebappMojo
                  throws MojoExecutionException, MojoFailureException
     {
 
-        	if ( ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) )&&
-        			! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                    ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) &&
-                    ! LUTECE_SITE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                    ! POM_PACKAGING.equals( project.getPackaging(  ) ) )
-           {
-        		throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or " +
-                        LUTECE_PLUGIN_PACKAGING + " or " + LUTECE_SITE_PACKAGING +" or "+ LUTECE_SITE_PACKAGING + "project." );
-
-        } else
+        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING, LUTECE_SITE_PACKAGING, POM_PACKAGING );
         {
             getLog(  ).info( "Assembly " + project.getArtifact(  ).getType(  ) + " artifact..." );
             assemblyProject(  );

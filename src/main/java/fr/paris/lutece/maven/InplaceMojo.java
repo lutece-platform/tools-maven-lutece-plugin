@@ -64,11 +64,7 @@ public class InplaceMojo
 	public void execute(  )
                  throws MojoExecutionException, MojoFailureException
     {
-        if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) )
-        {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING +
-                                              " project." );
-        }
+        validatePackaging( LUTECE_CORE_PACKAGING );
 
         explodeWebapp( webappSourceDirectory );
     }

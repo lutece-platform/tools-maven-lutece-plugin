@@ -84,14 +84,14 @@ public class AssemblyMojo
     //The path to the classes directory
     private static final String WEB_INF_CLASSES_PATH = "WEB-INF/classes/";
     private static final String JUNIT = "junit";
-    private static final String SERVELT_API = "servlet-api";
+    private static final String SERVLET_API = "servlet-api";
    
     /**
      * The directory containing the site resource files.
      *
      */
     @Parameter(
-    		property = "basedir/src/site/resources",
+    		defaultValue = "${basedir}/src/site/resources",
             required = true )
     private File resourcesDirectory;
 
@@ -177,12 +177,7 @@ public class AssemblyMojo
     public void execute(  )
                  throws MojoExecutionException, MojoFailureException
     {
-        if ( ! LUTECE_CORE_PACKAGING.equals( project.getPackaging(  ) ) &&
-                 ! LUTECE_PLUGIN_PACKAGING.equals( project.getPackaging(  ) ) )
-        {
-            throw new MojoExecutionException( "This goal can be invoked only on a " + LUTECE_CORE_PACKAGING + " or " +
-                                              LUTECE_PLUGIN_PACKAGING + " project." );
-        } else
+        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING );
         {
             getLog(  ).info( "Assembly " + project.getArtifact(  ).getType(  ) + " artifact..." );
             assemblyBinaries(  );
@@ -513,7 +508,7 @@ public class AssemblyMojo
                 a = (Artifact) o;
             } catch ( ClassCastException e )
             {
-                e.printStackTrace(  );
+                getLog(  ).error( e );
 
                 continue;
             }
@@ -541,10 +536,10 @@ public class AssemblyMojo
                                               metadataSource );
         } catch ( ArtifactResolutionException e )
         {
-            e.printStackTrace(  );
+            getLog(  ).error( e );
         } catch ( ArtifactNotFoundException e )
         {
-            e.printStackTrace(  );
+            getLog(  ).error( e );
         }
 
         for ( Object o : artifactResolutionResult.getArtifacts(  ) )
@@ -556,7 +551,7 @@ public class AssemblyMojo
                 a = (Artifact) o;
             } catch ( ClassCastException e )
             {
-                e.printStackTrace(  );
+                getLog(  ).error( e );
 
                 continue;
             }
@@ -565,7 +560,7 @@ public class AssemblyMojo
                      ! Artifact.SCOPE_TEST.equals( a.getScope(  ) )//for transitively dependencies artifact are not a good scope ( junit and servlet-api )
                       &&
                      ! JUNIT.equals( a.getArtifactId(  ) ) &&
-                     ! SERVELT_API.equals( a.getArtifactId(  ) ) )
+                     ! SERVLET_API.equals( a.getArtifactId(  ) ) )
             {
                 result.add( a.getFile(  ) );
             }

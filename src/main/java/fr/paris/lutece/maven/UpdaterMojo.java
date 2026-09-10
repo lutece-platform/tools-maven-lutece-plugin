@@ -186,11 +186,11 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
         }
     }
 
-    private File getOutputDirectory()
+    File getOutputDirectory()
     {
         String strPath;
 
-        if ((updOutputDirectory != null) && !"".equals(updOutputDirectory))
+        if (updOutputDirectory != null)
         {
             strPath = updOutputDirectory.getAbsolutePath();
         }
@@ -382,8 +382,7 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
      */
     private File getArchiveFile(String classifier, boolean timestamp, String extension, String strZipVersion)
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd-hhmm");
-        dateFormat.format(new Date()).toString();
+        SimpleDateFormat dateFormat = new SimpleDateFormat(ARCHIVE_TIMESTAMP_PATTERN);
 
         return new File(getOutputDirectory(),
                 project.getArtifactId() + ((null != classifier) ? ("-" + classifier) : "") + "-"

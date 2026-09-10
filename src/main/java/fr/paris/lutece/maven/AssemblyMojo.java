@@ -185,11 +185,11 @@ public class AssemblyMojo
         }
     }
 
-    private File getOutputDirectory(  )
+    File getOutputDirectory(  )
     {
-        String strPath = "";
+        String strPath;
 
-        if ( ( assemblyOutputDirectory == null ) || "".equals( assemblyOutputDirectory ) )
+        if ( assemblyOutputDirectory == null )
         {
             strPath = outputDirectory.getAbsolutePath(  );
         } else
@@ -477,8 +477,7 @@ public class AssemblyMojo
      */
     private File getArchiveFile( String classifier, boolean timestamp, String extension )
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat( "yyMMdd-hhmm" );
-        dateFormat.format( new Date(  ) ).toString(  );
+        SimpleDateFormat dateFormat = new SimpleDateFormat( ARCHIVE_TIMESTAMP_PATTERN );
 
         return new File( getOutputDirectory(  ),
                          artifactName + ( ( null != classifier ) ? ( "-" + classifier ) : "" ) +
@@ -542,6 +541,28 @@ public class AssemblyMojo
             getLog(  ).error( e );
         }
 
+        addTransitiveJars( artifactResolutionResult, result );
+
+        return result;
+    }
+
+    /**
+     * Adds the resolved transitive artifacts to the collected jars.
+     *
+     * @param artifactResolutionResult
+     *            the resolution result, null when the resolution failed and was logged
+     * @param result
+     *            the jars collected so far
+     */
+    void addTransitiveJars( ArtifactResolutionResult artifactResolutionResult, Set<File> result )
+    {
+        if ( artifactResolutionResult == null )
+        {
+            // The resolution failed and has already been logged : keep the direct dependencies
+            // rather than failing with a NullPointerException.
+            return;
+        }
+
         for ( Object o : artifactResolutionResult.getArtifacts(  ) )
         {
             Artifact a = null;
@@ -565,7 +586,5 @@ public class AssemblyMojo
                 result.add( a.getFile(  ) );
             }
         }
-
-        return result;
     }
 }

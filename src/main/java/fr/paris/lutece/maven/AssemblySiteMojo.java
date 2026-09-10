@@ -37,6 +37,7 @@ import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import javax.inject.Inject;
 
 import org.apache.maven.archiver.MavenArchiveConfiguration;
@@ -150,6 +151,24 @@ public class AssemblySiteMojo
         }
     }
 
+    /**
+     * Formats a timestamp in UTC, as the utcTimestampPattern parameter name promises. A plain
+     * SimpleDateFormat would use the build machine's time zone instead.
+     *
+     * @param strPattern
+     *            the date pattern
+     * @param date
+     *            the date to format
+     * @return the formatted UTC timestamp
+     */
+    static String formatUtcTimestamp( String strPattern, Date date )
+    {
+        DateFormat utcDateFormatter = new SimpleDateFormat( strPattern );
+        utcDateFormatter.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+
+        return utcDateFormatter.format( date );
+    }
+
     private void assemblySite(  )
                        throws MojoExecutionException
     {
@@ -161,8 +180,7 @@ public class AssemblySiteMojo
         // put the timestamp in the assembly name
         if ( ArtifactUtils.isSnapshot( project.getVersion(  ) ) )
         {
-            DateFormat utcDateFormatter = new SimpleDateFormat( utcTimestampPattern );
-            String newVersion = utcDateFormatter.format( new Date(  ) );
+            String newVersion = formatUtcTimestamp( utcTimestampPattern, new Date(  ) );
             finalName = StringUtils.replace( finalName, SNAPSHOT_PATTERN, newVersion );
         }
 

@@ -761,6 +761,7 @@ public abstract class AbstractLuteceWebappMojo
         {
 
             List<String> listLiquibaseFileErrors = new ArrayList<>();
+            List<String> listUnrecognizedUpgradeFiles = new ArrayList<>();
             final File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
             final File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
             // we allow explicit override of build.properties location with this system property
@@ -787,8 +788,8 @@ public abstract class AbstractLuteceWebappMojo
             boolean needRuntimeBuildProperties = linefilter == null;// no filter here => we have to do it at run-time
             // we do not use copyDirectoryStructure since we have specific needs
             FileUtils.copyDirectoryWithFilter(lq_sqlSourceDir, lq_sqlTargetDir,
-                    f -> (f.getName().equals("build.properties") && needRuntimeBuildProperties)
-                            || (f.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) && f.length() > 0 &&  LiquiBaseSqlMojo.isFileManagedByLiquibase(f,lq_sqlSourceDir.getAbsolutePath()) && LiquiBaseSqlMojo.isTaggedWithLiquibase(f, listLiquibaseFileErrors,lq_sqlSourceDir.getAbsolutePath())),
+                    f -> acceptSqlFile(f, lq_sqlSourceDir, needRuntimeBuildProperties, listLiquibaseFileErrors,
+                            listUnrecognizedUpgradeFiles),
                     linefilter);
 
 
@@ -799,6 +800,17 @@ public abstract class AbstractLuteceWebappMojo
                 for (String filePath : listLiquibaseFileErrors)
                 {
                     getLog().error(" - " + filePath);
+                }
+            }
+
+            if (!listUnrecognizedUpgradeFiles.isEmpty())
+            {
+                getLog().warn("The following upgrade scripts do not follow the Lutece SQL naming convention."
+                        + " They have not been copied to " + WEB_INF_CLASSES_SQL_PATH
+                        + " and will NOT be run by Liquibase :");
+                for (String filePath : listUnrecognizedUpgradeFiles)
+                {
+                    getLog().warn(" - " + filePath);
                 }
             }
 
@@ -816,6 +828,52 @@ public abstract class AbstractLuteceWebappMojo
 
     }
 
+
+    /**
+     * Tells whether a file found in WEB-INF/sql must be copied to WEB-INF/classes/sql, where
+     * Liquibase looks for it at runtime.
+     *
+     * @param file
+     *            the candidate file
+     * @param sqlSourceDir
+     *            the WEB-INF/sql directory
+     * @param needRuntimeBuildProperties
+     *            true when build.properties must be shipped for run-time SQL processing
+     * @param listLiquibaseFileErrors
+     *            collects the files that are managed by Liquibase but not tagged
+     * @param listUnrecognizedUpgradeFiles
+     *            collects the upgrade scripts that Liquibase will not recognize
+     * @return true if the file must be copied
+     */
+    private boolean acceptSqlFile(File file, File sqlSourceDir, boolean needRuntimeBuildProperties,
+            List<String> listLiquibaseFileErrors, List<String> listUnrecognizedUpgradeFiles)
+    {
+        if (BUILD_PROPERTIES_FILE.equals(file.getName()))
+        {
+            return needRuntimeBuildProperties;
+        }
+
+        if (!file.getName().toLowerCase().endsWith(LiquiBaseSqlMojo.SQL_EXT) || file.length() == 0)
+        {
+            return false;
+        }
+
+        String strBasePath = sqlSourceDir.getAbsolutePath();
+
+        if (!LiquiBaseSqlMojo.isFileManagedByLiquibase(file, strBasePath))
+        {
+            // The runtime changelog filter discards such a file too, so this is not a packaging
+            // loss. It is only a fault when the file sits where an upgrade script is expected.
+            if (LiquiBaseSqlMojo.isInUpgradeDirectory(file, strBasePath))
+            {
+                listUnrecognizedUpgradeFiles.add(LiquiBaseSqlMojo.getAbsoluteSqlFilePath(file, strBasePath));
+            }
+
+            return false;
+        }
+
+        return LiquiBaseSqlMojo.isTaggedWithLiquibase(file, listLiquibaseFileErrors, strBasePath);
+    }
 
    /**
      * generate microprofile-config.properties file indicating if liquibase can run or not

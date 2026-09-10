@@ -342,8 +342,6 @@ public class ExplodedMojo
      */
     private Set<Artifact> doDependencyResolution(  )
     {
-        Set<Artifact> artifactsReturn = new HashSet<>(  );
-
         // Collector Filter jar artifacts in scope 'compile' or 'runtime'
         ArtifactFilter thirdPartyFilter =
             new ArtifactFilter(  )
@@ -385,6 +383,27 @@ public class ExplodedMojo
         } catch ( ArtifactResolutionException e )
         {
             getLog(  ).error( e );
+        }
+
+        return collectResolvedArtifacts( artifactResolutionResult );
+    }
+
+    /**
+     * Resolves every node of a collection result and returns the distinct artifacts.
+     *
+     * @param artifactResolutionResult
+     *            the collection result, null when the collection failed and was logged
+     * @return the resolved artifacts, empty when there is no result to walk
+     */
+    Set<Artifact> collectResolvedArtifacts( ArtifactResolutionResult artifactResolutionResult )
+    {
+        Set<Artifact> artifactsReturn = new HashSet<>(  );
+
+        if ( artifactResolutionResult == null )
+        {
+            // The collection failed and has already been logged : carry on with no dependency
+            // rather than failing with a NullPointerException.
+            return artifactsReturn;
         }
 
         // keep track of added reactor projects in order to avoid duplicates

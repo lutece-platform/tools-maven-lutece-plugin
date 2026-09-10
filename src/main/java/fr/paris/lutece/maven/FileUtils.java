@@ -68,12 +68,14 @@ public class FileUtils
     // The name of subversion's administrative directories
     private static final String SVN_DIRECTORY = ".svn";
 
-    //regexp for filter xdoc
-    protected static final String REGEXP_SITE_XDOC_XML = "(.)*\\\\xdoc\\\\[^\\\\]*\\.(.)*";
-    protected static final String REGEXP_SITE_RESOURCES_XML = "(.)*\\\\resources\\\\images\\\\[^\\\\]*\\.(.)*";
-    protected static final String REGEXP_SITE_TECH = "(.)*\\\\tech(\\\\.)*";
-    protected static final String REGEXP_SITE_TECH_DIRECTORY = "(.)*\\\\tech";
-    protected static final String REGEXP_SITE_XML = "(.)*site\\\\site(.)*.xml";
+    // Regexps filtering out the site sources. They are matched against paths normalized with
+    // "/" separators : written with "\\" they only ever matched on Windows, so the archives
+    // produced on Linux and on Windows did not have the same content.
+    protected static final String REGEXP_SITE_XDOC_XML = "(.)*/xdoc/[^/]*\\.(.)*";
+    protected static final String REGEXP_SITE_RESOURCES_XML = "(.)*/resources/images/[^/]*\\.(.)*";
+    protected static final String REGEXP_SITE_TECH = "(.)*/tech(/.)*";
+    protected static final String REGEXP_SITE_TECH_DIRECTORY = "(.)*/tech";
+    protected static final String REGEXP_SITE_XML = "(.)*site/site(.)*.xml";
     private static int nNbFileModified;
     private static int nNbFileCopy;
 
@@ -118,6 +120,62 @@ public class FileUtils
     }
 
     /**
+     * Tells whether a file is a site source that must not be copied as-is : those are processed
+     * by the site plugin.
+     *
+     * @param file
+     *            the candidate file
+     * @return true if the file must be skipped
+     */
+    static boolean isExcludedSiteFile( File file )
+    {
+        return isExcludedSiteFile( file.getAbsolutePath(  ) );
+    }
+
+    /**
+     * Tells whether an absolute path denotes a site source. The path is normalized to "/"
+     * separators first, so that the result is the same on Windows and on unix systems.
+     *
+     * @param strAbsolutePath
+     *            the candidate absolute path
+     * @return true if the file must be skipped
+     */
+    static boolean isExcludedSiteFile( String strAbsolutePath )
+    {
+        String strPath = strAbsolutePath.replace( '\\', '/' );
+
+        return strPath.matches( REGEXP_SITE_XML ) || strPath.matches( REGEXP_SITE_TECH ) ||
+               strPath.matches( REGEXP_SITE_XDOC_XML ) || strPath.matches( REGEXP_SITE_RESOURCES_XML );
+    }
+
+    /**
+     * Tells whether a directory must not be copied : subversion administrative directories and
+     * the site "tech" directory.
+     *
+     * @param directory
+     *            the candidate directory
+     * @return true if the directory must be skipped
+     */
+    static boolean isExcludedSiteDirectory( File directory )
+    {
+        return SVN_DIRECTORY.equals( directory.getName(  ) ) ||
+               isExcludedSiteDirectory( directory.getAbsolutePath(  ) );
+    }
+
+    /**
+     * Tells whether an absolute path denotes the site "tech" directory, whatever the platform
+     * separator.
+     *
+     * @param strAbsolutePath
+     *            the candidate absolute path
+     * @return true if the directory must be skipped
+     */
+    static boolean isExcludedSiteDirectory( String strAbsolutePath )
+    {
+        return strAbsolutePath.replace( '\\', '/' ).matches( REGEXP_SITE_TECH_DIRECTORY );
+    }
+
+    /**
      * Copies an entire directory structure but only source files with timestamp
      * later than the destinations'.
      *
@@ -157,18 +215,14 @@ public class FileUtils
             {
                 destination = destination.getParentFile(  );
 
-                if ( ! file.getAbsolutePath(  ).matches( REGEXP_SITE_XML ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_TECH ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_XDOC_XML ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_RESOURCES_XML ) )
+                if ( ! isExcludedSiteFile( file ) )
                 {
                     copyFileToDirectoryIfModified( file, destination );
                 }
             } else if ( file.isDirectory(  ) )
             {
-                // Exclude SVN administrative directories
-                if ( ! SVN_DIRECTORY.equals( file.getName(  ) ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_TECH_DIRECTORY ) )
+                // Exclude SVN administrative directories and site sources
+                if ( ! isExcludedSiteDirectory( file ) )
                 {
                     if ( ! destination.exists(  ) && ! destination.mkdirs(  ) )
                     {
@@ -224,19 +278,15 @@ public class FileUtils
             {
                 destination = destination.getParentFile(  );
 
-                if ( ! file.getAbsolutePath(  ).matches( REGEXP_SITE_XML ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_TECH ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_XDOC_XML ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_RESOURCES_XML ) )
+                if ( ! isExcludedSiteFile( file ) )
                 {
                     org.codehaus.plexus.util.FileUtils.copyFileToDirectory( file, destination );
                     nNbFileCopy++;
                 }
             } else if ( file.isDirectory(  ) )
             {
-                // Exclude SVN administrative directories
-                if ( ! SVN_DIRECTORY.equals( file.getName(  ) ) &&
-                         ! file.getAbsolutePath(  ).matches( REGEXP_SITE_TECH_DIRECTORY ) )
+                // Exclude SVN administrative directories and site sources
+                if ( ! isExcludedSiteDirectory( file ) )
                 {
                     if ( ! destination.exists(  ) && ! destination.mkdirs(  ) )
                     {
@@ -381,6 +431,7 @@ public class FileUtils
         if ( destination.lastModified(  ) < source.lastModified(  ) )
         {
             copyFile( source, destination );
+            nNbFileModified++;
 
             return true;
         }

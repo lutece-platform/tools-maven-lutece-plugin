@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -84,9 +83,14 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     private static final String LIQUIBASE_SQL_HEADER_2 = "--liquibase formatted sql";
 
     private static final String EOL = "\n";
-    private static final String SQL_DIRECTORY = "./src/sql";
-    private static final String TARGET_DIRECTORY = "./target/liquibasesql/";
-    private static final String PLUGIN_CONF_DIRECTORY = "./webapp/WEB-INF/plugins";
+    /** Sub-directory of the build output directory used by {@link #dryRun}. */
+    private static final String TARGET_SUBDIRECTORY = "liquibasesql";
+    /** Location of the plugin descriptors, relative to the webapp source directory. */
+    private static final String PLUGIN_CONF_SUBPATH = "WEB-INF/plugins";
+    /** Prefix expected by {@link SqlPathInfo#parse(String)}. */
+    private static final String SQL_PATH_PREFIX = "sql/";
+    /** Directories in which {@link SqlPathInfo} expects a versioned upgrade script. */
+    private static final Pattern UPGRADE_DIRECTORY_PATTERN = Pattern.compile(".*/upgrades?/[^/]+");
    
     /**
      * Dry run creates files in target instead of replacing
@@ -121,8 +125,17 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
     private void processPluginXmls() throws IOException
     {
+        Path pluginConfDirectory = webappSourceDirectory.toPath().resolve(PLUGIN_CONF_SUBPATH);
+
+        if (!Files.isDirectory(pluginConfDirectory))
+        {
+            getLog().warn("No plugin descriptor directory " + pluginConfDirectory
+                    + " : SQL files will be tagged as '" + CORE + "'");
+            return;
+        }
+
         // Supposes there will always be only one XML file.
-        try (Stream<Path> filePathStream = Files.walk(Paths.get(PLUGIN_CONF_DIRECTORY)))
+        try (Stream<Path> filePathStream = Files.walk(pluginConfDirectory))
         {
             filePathStream.filter(pluginFileFilter).findAny().ifPresent(this::processPluginXml);
         }
@@ -159,10 +172,40 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
     private void processSqlFiles() throws IOException
     {
-        try (Stream<Path> filePathStream = Files.walk(Paths.get(SQL_DIRECTORY)))
+        Path sqlRoot = getSqlRoot();
+
+        if (!Files.isDirectory(sqlRoot))
+        {
+            getLog().info("No SQL directory " + sqlRoot + " : nothing to tag");
+            return;
+        }
+
+        try (Stream<Path> filePathStream = Files.walk(sqlRoot))
         {
             filePathStream.filter(sqlFileFilter).forEach(this::transformFile);
         }
+    }
+
+    /**
+     * @return the SQL source directory, as an absolute normalized path
+     */
+    private Path getSqlRoot()
+    {
+        return sqlDirectory.toPath().toAbsolutePath().normalize();
+    }
+
+    /**
+     * Builds the path expected by {@link SqlPathInfo#parse(String)}, ie the path of the file
+     * relative to the SQL source directory, prefixed by "sql/" and using "/" separators.
+     *
+     * @param path an SQL file located below the SQL source directory
+     * @return the corresponding "sql/..." path
+     */
+    private String getSqlPathInfoPath(Path path)
+    {
+        Path relative = getSqlRoot().relativize(path.toAbsolutePath().normalize());
+
+        return SQL_PATH_PREFIX + relative.toString().replace(File.separatorChar, '/');
     }
 
     /**
@@ -208,14 +251,8 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         {
             if (!CORE.equals(pluginName))
             {
-                getLog().info("path " + path);
-                SqlPathInfo sqlPath = SqlPathInfo.parse(normalizeWebappPath(path.toString()).substring(6));// remove leading "./src/"
-                if (!sqlPath.isCreate())
-                {
-                    if (sqlPath.getDstVersion() != null
-                            && (mostRecentSqlScriptVersion == null || mostRecentSqlScriptVersion.compareTo(sqlPath.getDstVersion()) < 0))
-                        mostRecentSqlScriptVersion = sqlPath.getDstVersion();
-                }
+                getLog().debug("Processing " + path);
+                trackMostRecentVersion(path);
             }
             // we suppose that all SQL files are UTF-8.
             // if that's not the case, we need a way to get that info for EACH input file
@@ -251,6 +288,32 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             throw new RuntimeException(e);
         }
     }
+    /**
+     * Keeps track of the most recent version found in the upgrade script names, so that it can be
+     * compared with the version declared in the plugin descriptor.
+     *
+     * @param path
+     *            an SQL file located below the SQL source directory
+     */
+    private void trackMostRecentVersion(Path path)
+    {
+        String strSqlPath = getSqlPathInfoPath(path);
+        SqlPathInfo sqlPath = SqlPathInfo.parse(strSqlPath);
+
+        if (sqlPath == null)
+        {
+            getLog().warn("SQL file " + strSqlPath + " does not follow the Lutece SQL naming convention :"
+                    + " its version cannot be checked and it will not be managed by Liquibase at runtime");
+            return;
+        }
+
+        if (!sqlPath.isCreate() && sqlPath.getDstVersion() != null
+                && (mostRecentSqlScriptVersion == null || mostRecentSqlScriptVersion.compareTo(sqlPath.getDstVersion()) < 0))
+        {
+            mostRecentSqlScriptVersion = sqlPath.getDstVersion();
+        }
+    }
+
     /** 
      * re-implementation of Files.readString (jdk11+), which does not exist in JDK8
      * @throws IOException 
@@ -262,41 +325,13 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
 
     private Path generateOutputPath(Path inputPath) throws IOException
     {
-        String subPathSqlFile = dryRun ? TARGET_DIRECTORY + inputPath.subpath(3, inputPath.getNameCount())
-                : SQL_DIRECTORY + "/" + inputPath.subpath(3, inputPath.getNameCount());
+        Path sqlRoot = getSqlRoot();
+        Path relative = sqlRoot.relativize(inputPath.toAbsolutePath().normalize());
+        Path targetRoot = dryRun ? outputDirectory.toPath().resolve(TARGET_SUBDIRECTORY) : sqlRoot;
 
-        Path outputPath = Paths.get(subPathSqlFile);
+        Path outputPath = targetRoot.resolve(relative);
         Files.createDirectories(outputPath.getParent());
         return outputPath;
-    }
-    
-    /**
-     * Normalizes the Webapp Path
-     *
-     * @param strPath
-     *            The path to normalize
-     * @return The normalized path
-     */
-    private static String normalizeWebappPath( String strPath )
-    {
-        String strNormalized = strPath;
-
-        // For windows, remove the leading \
-        if ( ( strNormalized.length( ) > 3 ) && ( strNormalized.indexOf( ':' ) == 2 ) )
-        {
-            strNormalized = strNormalized.substring( 1 );
-        }
-
-        // convert Windows path separator if present
-        strNormalized = substitute( strNormalized, "/", "\\" );
-
-        // remove the ending separator if present
-        if ( strNormalized.endsWith( "/" ) )
-        {
-            strNormalized = strNormalized.substring( 0, strNormalized.length( ) - 1 );
-        }
-
-        return strNormalized;
     }
     /**
      * fix Liquibase Comments
@@ -329,37 +364,6 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         Pattern pattern = Pattern.compile("(?m)^--(?=liquibase formatted sql|changeset|preconditions)");
         Matcher matcher = pattern.matcher(content);
         return matcher.find();
-    }
-
-    
-    /**
-     * This function substitutes all occurences of a given bookmark by a given value
-     *
-     * @param strSource
-     *            The input string that contains bookmarks to replace
-     * @param strValue
-     *            The value to substitute to the bookmark
-     * @param strBookmark
-     *            The bookmark name
-     * @return The output string.
-     */
-    public static String substitute( String strSource, String strValue, String strBookmark )
-    {
-        StringBuilder strResult = new StringBuilder( );
-        int nPos = strSource.indexOf( strBookmark );
-        String strModifySource = strSource;
-
-        while ( nPos != -1 )
-        {
-            strResult.append( strModifySource.substring( 0, nPos ) );
-            strResult.append( strValue );
-            strModifySource = strModifySource.substring( nPos + strBookmark.length( ) );
-            nPos = strModifySource.indexOf( strBookmark );
-        }
-
-        strResult.append( strModifySource );
-
-        return strResult.toString( );
     }
 
 
@@ -396,8 +400,39 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
      * @param strBasePath
      * @return
      */
-   private static String getAbsoluteSqlFilePath(File candidate,String strBasePath ) {
-         return candidate.getPath().substring(strBasePath.length()-3 );
-   } 
+   static String getAbsoluteSqlFilePath(File candidate,String strBasePath ) {
+         return normalizeSeparators( candidate.getPath().substring(strBasePath.length()-3 ) );
+   }
+
+    /**
+     * Replaces Windows separators by "/", the separator the {@link SqlPathInfo} patterns are
+     * written with. Without this, no path is ever recognized on Windows and no SQL file reaches
+     * WEB-INF/classes/sql.
+     *
+     * @param strPath
+     *            the path to normalize
+     * @return the path with "/" separators
+     */
+    static String normalizeSeparators(String strPath)
+    {
+        return strPath.replace('\\', '/');
+    }
+
+    /**
+     * Tells whether an SQL file sits in an upgrade directory, ie where {@link SqlPathInfo} expects
+     * a versioned upgrade script. A file located there but not recognized by
+     * {@link #isFileManagedByLiquibase(File, String)} is a naming fault worth reporting : it is
+     * silently skipped both at packaging time and by the runtime changelog filter.
+     *
+     * @param candidate
+     *            the SQL file
+     * @param strBasePath
+     *            the absolute path of the WEB-INF/sql directory
+     * @return true if the file sits in an upgrade directory
+     */
+    static boolean isInUpgradeDirectory(File candidate, String strBasePath)
+    {
+        return UPGRADE_DIRECTORY_PATTERN.matcher(getAbsoluteSqlFilePath(candidate, strBasePath)).matches();
+    }
 
 }

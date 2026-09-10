@@ -196,6 +196,13 @@ public abstract class AbstractLuteceMojo
     protected static final String META_INF_DIRECTORY = "WEB-INF/classes/META-INF/";
     protected static final String WEB_INF_DB_PROPERTIES_PATH = "WEB-INF/conf/db.properties";
     protected static final String WEB_INF_BUILD_PROPERTIES_PATH = "WEB-INF/sql/build.properties";
+    protected static final String BUILD_PROPERTIES_FILE = "build.properties";
+
+    /**
+     * Timestamp appended to assembly file names. "HH" is the 24-hour clock : with "hh", an
+     * assembly built at 13:30 and one built at 01:30 produced the very same file name.
+     */
+    protected static final String ARCHIVE_TIMESTAMP_PATTERN = "yyMMdd-HHmm";
     protected static final String DATABASE_VENDOR_NONE = "none";
     protected static final String DATABASE_VENDOR_AUTO = "auto";
     protected static final Collection<String> DATABASE_VENDORS = Arrays.asList("hsqldb", "mysql", "oracle", "postgresql");

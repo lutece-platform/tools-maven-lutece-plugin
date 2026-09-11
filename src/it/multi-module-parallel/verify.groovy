@@ -15,11 +15,38 @@ String dat = new File( shared, 'WEB-INF/plugins/plugins.dat' ).text
 assert dat.contains( 'modA.installed=1' ) : "plugins.dat was written too early :\n${dat}"
 assert dat.contains( 'modB.installed=1' ) : "plugins.dat was written too early :\n${dat}"
 
-// commons-lang3 is requested in 3.14.0 by modA and 3.17.0 by modB : one jar, the highest.
+
+/** The version each module asks for, read from its pom so a dependency bump cannot make
+ *  this test assert a stale number. */
+def askedFor = { String module, String artifact ->
+    def matcher = new File( basedir, "${module}/pom.xml" ).text =~
+            /${artifact}<\/artifactId>\s*<version>([^<]+)</
+    assert matcher.find() : "${artifact} is not declared by ${module}"
+    matcher[0][1]
+}
+def highestOf = { List<String> versions ->
+    versions.sort( false ) { String a, String b ->
+        List<Integer> left = a.tokenize( '.' ).collect { it as int }
+        List<Integer> right = b.tokenize( '.' ).collect { it as int }
+        int size = Math.max( left.size(), right.size() )
+        for ( int i = 0; i < size; i++ ) {
+            int x = i < left.size() ? left[i] : 0
+            int y = i < right.size() ? right[i] : 0
+            if ( x != y ) { return x <=> y }
+        }
+        return 0
+    }.last()
+}
+
+// The two modules ask for commons-lang3 in different versions : one jar must remain, and it
+// must be the highest of the two, whichever they happen to be.
 List<String> jars = new File( shared, 'WEB-INF/lib' ).listFiles().collect { it.name }.sort()
 List<String> lang3 = jars.findAll { it.startsWith( 'commons-lang3-' ) }
+String expected = highestOf( [ askedFor( 'modA', 'commons-lang3' ), askedFor( 'modB', 'commons-lang3' ) ] )
+
 assert lang3.size() == 1 : "the version conflict was not arbitrated : ${lang3}"
-assert lang3[0] == 'commons-lang3-3.17.0.jar' : "the highest version must win, got ${lang3[0]}"
+assert lang3[0] == "commons-lang3-${expected}.jar" :
+        "the highest version must win, expected ${expected}, got ${lang3[0]}"
 
 assert jars.any { it.startsWith( 'commons-io-' ) } : "modA's jar is missing : ${jars}"
 assert !jars.any { it.startsWith( 'build-config-' ) } : "a provided jar was shipped : ${jars}"

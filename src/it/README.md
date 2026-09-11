@@ -16,6 +16,7 @@ They are behind the `run-its` profile because they need network access: the proj
 | `exploded-webapp` | which SQL files reach `WEB-INF/classes/sql`, and the report on a misnamed upgrade script |
 | `exploded-lite` | the lite variant deploys the webapp and the SQL but ships no jar and no compiled class |
 | `war` | the archive really holds the webapp, the default configuration, the SQL and the third-party jars |
+| `assembly` | which jars a plugin bin zip ships: transitive dependencies yes, lutece dependencies and what they drag in no |
 | `site-assembly` | a `lutece-site` war, and the timestamp substituted for the SNAPSHOT marker, read in the French time zone |
 
 `verify.groovy` receives `basedir` (the cloned project) and can read `build.log` to assert on

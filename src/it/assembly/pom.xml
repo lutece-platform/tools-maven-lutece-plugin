@@ -1,0 +1,62 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.paris.lutece.it</groupId>
+  <artifactId>assembly</artifactId>
+  <version>1.0</version>
+  <packaging>lutece-plugin</packaging>
+
+  <description>
+    The assembly goal builds the bin and src zips of a plugin. Pins down which jars end up
+    in WEB-INF/lib of the bin zip, since that set comes from the dependency resolution.
+  </description>
+
+  <repositories>
+    <repository>
+      <id>lutece</id>
+      <url>https://dev.lutece.paris.fr/maven_repository</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>fr.paris.lutece.tools</groupId>
+      <artifactId>build-config</artifactId>
+      <version>3.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- commons-configuration2 drags commons-text, itself dragging commons-lang3 :
+         two levels of transitivity to check -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-configuration2</artifactId>
+      <version>2.10.1</version>
+    </dependency>
+    <!-- A Lutece plugin dependency. Neither it nor the artifacts it drags in - lutece-core,
+         liquibase-core, library-sql-utils - belong in this plugin's own bin zip : they are
+         deployed with the core and with that plugin, and duplicating them here would put two
+         copies of the same library on the classpath. -->
+    <dependency>
+      <groupId>fr.paris.lutece.plugins</groupId>
+      <artifactId>plugin-liquibase</artifactId>
+      <version>2.0.1</version>
+      <type>lutece-plugin</type>
+    </dependency>
+    <!-- must be excluded from the assembly, whatever its scope -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>fr.paris.lutece.tools</groupId>
+        <artifactId>lutece-maven-plugin</artifactId>
+        <version>@project.version@</version>
+      </extension>
+    </extensions>
+  </build>
+</project>

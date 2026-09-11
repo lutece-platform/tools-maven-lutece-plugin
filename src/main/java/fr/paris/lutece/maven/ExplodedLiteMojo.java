@@ -42,10 +42,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
 
 /**
  * Mojo to explode a web application for Lutece projects while excluding Java class files and JAR dependencies.
@@ -98,32 +94,9 @@ public class ExplodedLiteMojo extends AbstractLuteceWebappMojo {
      */
     @Override
     protected void addToExplodedWebapp(Artifact luteceArtifact, File webappDir) throws MojoExecutionException {
-        ArtifactRequest request = new ArtifactRequest();
-        request.setArtifact(new DefaultArtifact(
-                luteceArtifact.getGroupId(),
-                luteceArtifact.getArtifactId(),
-                WEBAPP_CLASSIFIER,
-                "zip",
-                luteceArtifact.getVersion()
-        ));
-        request.setRepositories(remoteProjectRepositories);
-
-        ArtifactResult result;
-        try {
-            result = repoSystem.resolveArtifact(repoSession, request);
-        } catch (ArtifactResolutionException e) {
-            throw new MojoExecutionException(
-                    "Error while resolving Artifact " + request.toString(), e);
-        }
-        File resolvedFile = result.getArtifact().getFile();
-        try {
-            unArchiver.setSourceFile(resolvedFile);
-            unArchiver.setDestDirectory(webappDir);
-            unArchiver.extract();
-        } catch (Exception e) {
-            throw new MojoExecutionException(
-                    "Error while unpacking file " + resolvedFile.getAbsolutePath(), e);
-        }
+        // The lite variant deploys the webapp content but ships no jar, so it skips the
+        // copyArtifactJar() step the full goal performs.
+        unpackWebappArtifact(luteceArtifact, webappDir);
     }
 
 

@@ -65,8 +65,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
@@ -155,6 +153,12 @@ public abstract class AbstractLuteceWebappMojo
     @Parameter(property = "targetDatabaseVendor", defaultValue = DATABASE_VENDOR_NONE)
     protected String targetDatabaseVendor;
 
+
+    /**
+     * The artifact factory.
+     */
+    @Inject
+    protected org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
 
     /**
      * The artifact resolver.
@@ -502,23 +506,7 @@ public abstract class AbstractLuteceWebappMojo
     protected void addToExplodedWebapp( Artifact luteceArtifact, File webappDir )
                                 throws MojoExecutionException
     {
-        copyArtifactJar( luteceArtifact, webappDir );
-        unpackWebappArtifact( luteceArtifact, webappDir );
-    }
-
-    /**
-     * Copies a Lutece artifact's own jar to WEB-INF/lib.
-     *
-     * @param luteceArtifact
-     *            the Lutece artifact
-     * @param webappDir
-     *            the exploded webapp's base directory
-     * @throws MojoExecutionException
-     *             if the jar cannot be copied
-     */
-    protected void copyArtifactJar( Artifact luteceArtifact, File webappDir )
-                            throws MojoExecutionException
-    {
+        // Copy the artifact's main JAR to WEB-INF/lib
         File repoJar = luteceArtifact.getFile(  );
 
         File webinfLib = new File( webappDir, "WEB-INF/lib" );
@@ -535,50 +523,34 @@ public abstract class AbstractLuteceWebappMojo
             throw new MojoExecutionException( "Error while copying " + repoJar.getAbsolutePath(  ) + " to " +
                                               webinfJar.getAbsolutePath(  ), e );
         }
-    }
 
-    /**
-     * Unpacks the webapp attachment every Lutece artifact carries into the exploded webapp.
-     *
-     * Resolved through the repository system rather than the legacy ArtifactFactory and
-     * ArtifactResolver, which Maven 4 drops.
-     *
-     * @param luteceArtifact
-     *            the Lutece artifact whose webapp attachment is wanted
-     * @param webappDir
-     *            the exploded webapp's base directory
-     * @throws MojoExecutionException
-     *             if the attachment cannot be resolved or unpacked
-     */
-    protected void unpackWebappArtifact( Artifact luteceArtifact, File webappDir )
-                                 throws MojoExecutionException
-    {
-        ArtifactRequest request = new ArtifactRequest(  );
-        request.setArtifact( new DefaultArtifact( luteceArtifact.getGroupId(  ),
-                                                  luteceArtifact.getArtifactId(  ),
-                                                  WEBAPP_CLASSIFIER,
-                                                  "zip",
-                                                  luteceArtifact.getVersion(  ) ) );
-        request.setRepositories( remoteProjectRepositories );
+        // Every Lutece artifact has an attached webapp artifact
+        Artifact webappArtifact =
+            artifactFactory.createArtifactWithClassifier( luteceArtifact.getGroupId(  ),
+                                                          luteceArtifact.getArtifactId(  ),
+                                                          luteceArtifact.getVersion(  ),
+                                                          "zip",
+                                                          WEBAPP_CLASSIFIER );
 
-        File resolvedFile;
-
+        // Resolve the webapp artifact
         try
         {
-            resolvedFile = repoSystem.resolveArtifact( repoSession, request ).getArtifact(  ).getFile(  );
-        } catch ( org.eclipse.aether.resolution.ArtifactResolutionException e )
+            resolver.resolve( webappArtifact, remoteRepositories, localRepository );
+        } catch ( Exception e )
         {
-            throw new MojoExecutionException( "Error while resolving artifact " + request.getArtifact(  ), e );
+            throw new MojoExecutionException( "Error while resolving artifact " + webappArtifact, e );
         }
 
+        // Unzip the webapp artifact to the webapp directory
         try
         {
-            unArchiver.setSourceFile( resolvedFile );
+            unArchiver.setSourceFile( webappArtifact.getFile(  ) );
             unArchiver.setDestDirectory( webappDir );
             unArchiver.extract(  );
         } catch ( Exception e )
         {
-            throw new MojoExecutionException( "Error while unpacking file " + resolvedFile.getAbsolutePath(  ), e );
+            throw new MojoExecutionException( "Error while unpacking file " +
+                                              webappArtifact.getFile(  ).getAbsolutePath(  ), e );
         }
     }
 

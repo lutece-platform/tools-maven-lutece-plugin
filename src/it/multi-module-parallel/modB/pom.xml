@@ -1,0 +1,26 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>fr.paris.lutece.it</groupId>
+    <artifactId>multi-module-parallel</artifactId>
+    <version>1.0</version>
+  </parent>
+  <artifactId>modB</artifactId>
+  <packaging>lutece-plugin</packaging>
+  <dependencies>
+    <dependency>
+      <groupId>fr.paris.lutece.tools</groupId>
+      <artifactId>build-config</artifactId>
+      <version>3.0.1</version>
+      <!-- provided, exactly as lutece-global-pom declares it : the jar carries the ant
+           scripts to unpack, it must not be shipped in WEB-INF/lib -->
+      <scope>provided</scope>
+    </dependency>
+    <!-- also requested by modA, in another version -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.17.0</version>
+    </dependency>
+  </dependencies>
+</project>

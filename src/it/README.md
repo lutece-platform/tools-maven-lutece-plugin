@@ -12,6 +12,7 @@ They are behind the `run-its` profile because they need network access: the proj
 | Project | What it pins down |
 |---|---|
 | `liquibase-sql-reactor` | `liquibase-sql` on a module of a reactor, where the working directory is the root and not the module |
+| `multi-module-parallel` | the same reactor under `-T 4`: serialized exploding, and the same result as a sequential build |
 | `multi-module` | one shared webapp per reactor: merged descriptors, pooled jars, arbitrated version conflict |
 | `exploded-webapp` | which SQL files reach `WEB-INF/classes/sql`, and the report on a misnamed upgrade script |
 | `exploded-lite` | the lite variant deploys the webapp and the SQL but ships no jar and no compiled class |

@@ -110,38 +110,32 @@ public class ExplodedMojo
         } else
         {
             // If the following condition returns "true", then it is a multi-project
-            if ( ( reactorProjects.size(  ) > 1 ) && ! project.isExecutionRoot(  ) )
+            boolean bMultiProject = ( reactorProjects.size(  ) > 1 ) && ! project.isExecutionRoot(  );
+
+            if ( bMultiProject )
             {
                 testWebappDirectory = getRootProjectBuildDirectory(  );
-
-                // create  directory WEB-INF/lib in lutece-multi-project
-                File webinfLib = new File( testWebappDirectory, "WEB-INF/lib" );
-
-                if ( ! webinfLib.exists(  ) )
-                {
-                    webinfLib.mkdirs(  );
-                }
-
-                // Resolve dependencies in multi-project (multiProjectArtifacts)
-                copyThirdPartyJars( testWebappDirectory );
-
-                // copy dependencies in directory WEB-INF/lib
-                Set<Artifact> artifactsToCopy = new LinkedHashSet<>(  );
-                Set<Artifact> artifactsToDelete = new LinkedHashSet<>(  );
-                Set<Artifact> artifactsReturn = doDependencyResolution(  );
-                buildListArtifacts( artifactsReturn, artifactsToCopy, artifactsToDelete );
-
-                getLog(  ).info( "Removing older dependencies from lutece-multi-project target directory" );
-                removeArtifacts( webinfLib, artifactsToDelete );
-                getLog(  ).info( "Copy dependencies into lutece-multi-project target directory" );
-                copyDependencies( webinfLib, artifactsToCopy );
             }
 
-            explodeWebapp( testWebappDirectory );
-            explodeConfigurationFiles( testWebappDirectory );
-            explodeSqlFiles(testWebappDirectory, targetDatabaseVendor);
+            if ( bMultiProject )
+            {
+                // Every module of the reactor explodes into this very directory, so with -T
+                // they would unpack build-config over each other and copy files into a tree
+                // another module is still writing. Exploding is serialized; the rest of the
+                // build stays parallel.
+                synchronized ( getSharedDirectoryLock( testWebappDirectory ) )
+                {
+                    explodeIntoSharedWebapp(  );
+                }
+            }
+            else
+            {
+                explodeWebapp( testWebappDirectory );
+                explodeConfigurationFiles( testWebappDirectory );
+                explodeSqlFiles( testWebappDirectory, targetDatabaseVendor );
+            }
 
-            if ( ( reactorProjects.size(  ) > 1 ) && isLastProjectOfReactor(  ) )
+            if ( ( reactorProjects.size(  ) > 1 ) && isLastModuleToExplode(  ) )
             {
                 // Every module has now deployed its descriptor into the shared webapp, so the
                 // file can list them. It used to be generated from the root POM branch, and
@@ -162,14 +156,61 @@ public class ExplodedMojo
     }
 
     /**
-     * Tells whether the current project is the last one the reactor builds.
+     * Explodes this module into the webapp the whole reactor shares.
      *
-     * @return true when no other module will explode into the shared webapp after this one
+     * Must be called under {@link #getSharedDirectoryLock(File)} : everything it does writes
+     * into a tree the other modules write into too.
+     *
+     * @throws MojoExecutionException
+     *             if the webapp cannot be assembled
      */
-    private boolean isLastProjectOfReactor(  )
+    private void explodeIntoSharedWebapp(  )
+                                 throws MojoExecutionException
     {
-        return ! reactorProjects.isEmpty(  ) &&
-               reactorProjects.get( reactorProjects.size(  ) - 1 ).equals( project );
+        // create  directory WEB-INF/lib in lutece-multi-project
+        File webinfLib = new File( testWebappDirectory, "WEB-INF/lib" );
+
+        if ( ! webinfLib.exists(  ) )
+        {
+            webinfLib.mkdirs(  );
+        }
+
+        // Resolve dependencies in multi-project (multiProjectArtifacts)
+        copyThirdPartyJars( testWebappDirectory );
+
+        // copy dependencies in directory WEB-INF/lib
+        Set<Artifact> artifactsToCopy = new LinkedHashSet<>(  );
+        Set<Artifact> artifactsToDelete = new LinkedHashSet<>(  );
+        Set<Artifact> artifactsReturn = doDependencyResolution(  );
+        buildListArtifacts( artifactsReturn, artifactsToCopy, artifactsToDelete );
+
+        getLog(  ).info( "Removing older dependencies from lutece-multi-project target directory" );
+        removeArtifacts( webinfLib, artifactsToDelete );
+        getLog(  ).info( "Copy dependencies into lutece-multi-project target directory" );
+        copyDependencies( webinfLib, artifactsToCopy );
+
+        explodeWebapp( testWebappDirectory );
+        explodeConfigurationFiles( testWebappDirectory );
+        explodeSqlFiles( testWebappDirectory, targetDatabaseVendor );
+    }
+
+    /**
+     * Tells whether this module is the last one to have exploded into the shared webapp.
+     *
+     * Counting the modules that are done, rather than comparing with the last one the reactor
+     * declares, is what makes this hold under -T : with parallel builds the last declared
+     * module can well finish first, and plugins.dat was then written before the others had
+     * deployed their descriptors.
+     *
+     * @return true when every module of the reactor has exploded
+     */
+    private boolean isLastModuleToExplode(  )
+    {
+        long nExpected = reactorProjects.stream(  )
+                .filter( p -> ! ( POM_PACKAGING.equals( p.getPackaging(  ) ) && p.isExecutionRoot(  ) ) )
+                .count(  );
+
+        return countExplodedModules(  ) >= nExpected;
     }
 
     /**
@@ -295,7 +336,13 @@ public class ExplodedMojo
         try
         {
             artifactResolutionResult =
-                artifactCollector.collect( getMultiProjectArtifacts(  ),
+                // Reduced first : the collector has no specified behaviour when the same
+                // artifact reaches it in two versions, and whatever it drops here cannot be
+                // recovered later. buildListArtifacts applies the same rule again, between
+                // what is already copied and what this module brings. Removing either one
+                // alone still yields the right jar; removing both makes a parallel build
+                // ship a different version from one run to the next.
+                artifactCollector.collect( keepHighestVersions( getMultiProjectArtifacts(  ) ),
                                            project.getArtifact(  ),
                                            localRepository,
                                            remoteRepositories,
@@ -385,24 +432,16 @@ public class ExplodedMojo
                     if ( artifact.getArtifactId(  ).equals( multiprojetArtifact.getArtifactId(  ) ) &&
                              artifact.getGroupId(  ).equals( multiprojetArtifact.getGroupId(  ) ) )
                     {
-                        //Workaround MAVENPLUGIN-33 - NullPointerException when doing multi-project with excluded dependencies
-                        //Some excluded artifacts are in the list but with a null VersionRange, which triggers an NPE in getSelectedVersion()..
-                        //Skip them because we want to exclude them anyway.
-                        if ( artifact.getVersionRange( ) != null ) {
-                            // Compare version
-                            try
-                            {
-                                if ( artifact.getSelectedVersion(  ).compareTo( multiprojetArtifact.getSelectedVersion(  ) ) > 0 )
-                                {
-                                    artifactsToDelete.add( multiprojetArtifact );
-                                } else
-                                {
-                                    bIsInMultiProject = true;
-                                }
-                            } catch ( OverConstrainedVersionException e )
-                            {
-                                throw new MojoExecutionException( "Error while removing comparing versions", e );
-                            }
+                        // Same rule as keepHighestVersions : the newest of the two stays.
+                        // Comparing the plain versions also drops the MAVENPLUGIN-33
+                        // workaround, which had to skip the artifacts reaching us without a
+                        // version range because getSelectedVersion() throws on those.
+                        if ( compareVersions( artifact, multiprojetArtifact ) > 0 )
+                        {
+                            artifactsToDelete.add( multiprojetArtifact );
+                        } else
+                        {
+                            bIsInMultiProject = true;
                         }
 
                         break;

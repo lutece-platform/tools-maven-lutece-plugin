@@ -44,7 +44,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.execution.MavenSession;
@@ -330,6 +334,14 @@ public abstract class AbstractLuteceMojo
     private static final String MULTI_PROJECT_ARTIFACTS_COPIED_KEY =
         AbstractLuteceMojo.class.getName(  ) + ".multiProjectArtifactsCopied";
 
+    /** Key of the counter of modules that have exploded into the shared webapp. */
+    private static final String EXPLODED_MODULES_KEY =
+        AbstractLuteceMojo.class.getName(  ) + ".explodedModules";
+
+    /** Key prefix of the locks guarding the directories the modules share. */
+    private static final String SHARED_DIRECTORY_LOCK_KEY =
+        AbstractLuteceMojo.class.getName(  ) + ".sharedDirectoryLock:";
+
     /**
     * Plexus logger needed for debugging manual artifact resolution.
     */
@@ -398,6 +410,85 @@ public abstract class AbstractLuteceMojo
     {
         return (Set<Artifact>) data.computeIfAbsent( strKey,
                 (  ) -> Collections.synchronizedSet( new LinkedHashSet<Artifact>(  ) ) );
+    }
+
+    /**
+     * Keeps a single version of each artifact : the highest one.
+     *
+     * Every module of a reactor resolves its own dependencies first, honouring the
+     * dependencyManagement it inherits, so the versions reaching this point already are the
+     * ones the poms impose. What is left to arbitrate is a genuine divergence between two
+     * modules, and the shared webapp can hold only one jar per library. Picking the highest
+     * version is a rule; relying on the order the modules happen to run in is not one, and it
+     * made a parallel build ship a different jar from one run to the next.
+     *
+     * @param artifactsToReduce
+     *            the artifacts gathered from every module
+     * @return one artifact per groupId:artifactId, in a stable order
+     */
+    static Set<Artifact> keepHighestVersions( Collection<Artifact> artifactsToReduce )
+    {
+        Map<String, Artifact> highestByKey = new TreeMap<>(  );
+
+        for ( Artifact artifact : artifactsToReduce )
+        {
+            String strKey = artifact.getGroupId(  ) + ":" + artifact.getArtifactId(  );
+            Artifact highest = highestByKey.get( strKey );
+
+            if ( ( highest == null ) || ( compareVersions( artifact, highest ) > 0 ) )
+            {
+                highestByKey.put( strKey, artifact );
+            }
+        }
+
+        return new LinkedHashSet<>( highestByKey.values(  ) );
+    }
+
+    /**
+     * Compares two artifacts by version.
+     *
+     * Uses the plain version string rather than getSelectedVersion(), which needs a version
+     * range to be set and throws when it is not : excluded artifacts reach us without one.
+     *
+     * @param left
+     *            the first artifact
+     * @param right
+     *            the second artifact
+     * @return a negative value, zero or a positive value as left is older, equal or newer
+     */
+    static int compareVersions( Artifact left, Artifact right )
+    {
+        return new DefaultArtifactVersion( left.getVersion(  ) )
+                .compareTo( new DefaultArtifactVersion( right.getVersion(  ) ) );
+    }
+
+    /**
+     * Records that a module has finished exploding, and returns how many have.
+     *
+     * @return the number of modules done so far, this one included
+     */
+    protected int countExplodedModules(  )
+    {
+        return ( (AtomicInteger) session.getRepositorySession(  ).getData(  )
+                .computeIfAbsent( EXPLODED_MODULES_KEY, AtomicInteger::new ) ).incrementAndGet(  );
+    }
+
+    /**
+     * Returns the lock guarding a directory several modules of the build write into.
+     *
+     * A reactor assembles one shared webapp, so with -T the modules explode into the very same
+     * tree at the same time and corrupt each other. The lock lives in the session data, like
+     * the multi-project artifact sets, so it is the same object for every module of one build
+     * and disappears with it.
+     *
+     * @param sharedDirectory
+     *            the directory the modules share
+     * @return the lock to synchronize on
+     */
+    protected Object getSharedDirectoryLock( File sharedDirectory )
+    {
+        return session.getRepositorySession(  ).getData(  )
+                .computeIfAbsent( SHARED_DIRECTORY_LOCK_KEY + sharedDirectory.getAbsolutePath(  ), Object::new );
     }
 
     /**

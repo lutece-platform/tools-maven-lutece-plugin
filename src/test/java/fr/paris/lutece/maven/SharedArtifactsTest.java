@@ -1,6 +1,7 @@
 package fr.paris.lutece.maven;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,8 +34,14 @@ class SharedArtifactsTest
 
     private static Artifact artifact( String strArtifactId )
     {
-        return new DefaultArtifact( "fr.paris.lutece", strArtifactId, VersionRange.createFromVersion( "1.0" ),
-                Artifact.SCOPE_COMPILE, "jar", null, new DefaultArtifactHandler( "jar" ) );
+        return artifact( strArtifactId, "1.0" );
+    }
+
+    private static Artifact artifact( String strArtifactId, String strVersion )
+    {
+        return new DefaultArtifact( "fr.paris.lutece", strArtifactId,
+                VersionRange.createFromVersion( strVersion ), Artifact.SCOPE_COMPILE, "jar", null,
+                new DefaultArtifactHandler( "jar" ) );
     }
 
     @Test
@@ -77,6 +84,41 @@ class SharedArtifactsTest
 
         assertNotSame( AbstractLuteceMojo.getSharedArtifacts( firstBuild, KEY_A ), set );
         assertTrue( set.isEmpty( ), "no state must leak from the previous build" );
+    }
+
+    @Test
+    @DisplayName( "the highest version wins, whatever the order the modules came in" )
+    void theHighestVersionWins( )
+    {
+        Artifact older = artifact( "library", "3.14.0" );
+        Artifact newer = artifact( "library", "3.17.0" );
+        Artifact other = artifact( "other", "1.0" );
+
+        // The order modules run in must not decide which jar the shared webapp ships.
+        for ( List<Artifact> order : List.of( List.of( older, newer, other ), List.of( newer, older, other ),
+                List.of( other, newer, older ) ) )
+        {
+            Set<Artifact> kept = AbstractLuteceMojo.keepHighestVersions( order );
+
+            assertEquals( 2, kept.size( ), "one artifact per groupId:artifactId" );
+            assertTrue( kept.contains( newer ), "the highest version must win, got " + kept );
+            assertFalse( kept.contains( older ), "the older version must be dropped, got " + kept );
+        }
+    }
+
+    @Test
+    @DisplayName( "versions compare without needing a version range" )
+    void versionsCompareWithoutAVersionRange( )
+    {
+        // getSelectedVersion() throws on an artifact that carries no range, which is how
+        // excluded artifacts reach us. Comparing the plain versions does not.
+        Artifact noRange = new DefaultArtifact( "fr.paris.lutece", "library", "2.0", Artifact.SCOPE_COMPILE,
+                "jar", null, new DefaultArtifactHandler( "jar" ) );
+
+        assertTrue( AbstractLuteceMojo.compareVersions( noRange, artifact( "library", "1.0" ) ) > 0 );
+        assertTrue( AbstractLuteceMojo.compareVersions( artifact( "library", "1.0" ), noRange ) < 0 );
+        assertEquals( 0, AbstractLuteceMojo.compareVersions( artifact( "library", "1.0" ),
+                artifact( "library", "1.0" ) ) );
     }
 
     @Test

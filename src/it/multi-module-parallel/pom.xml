@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.paris.lutece.it</groupId>
+  <artifactId>multi-module-parallel</artifactId>
+  <version>1.0</version>
+  <packaging>pom</packaging>
+
+  <description>
+    The same reactor as multi-module, built with -T (see .mvn/maven.config). Every module
+    explodes into one shared tree, so the goal has to serialize that work and stay
+    deterministic: same jars and same plugins.dat as a sequential build.
+  </description>
+
+  <modules>
+    <module>modA</module>
+    <module>modB</module>
+  </modules>
+
+  <repositories>
+    <repository>
+      <id>lutece</id>
+      <url>https://dev.lutece.paris.fr/maven_repository</url>
+    </repository>
+  </repositories>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>fr.paris.lutece.tools</groupId>
+        <artifactId>lutece-maven-plugin</artifactId>
+        <version>@project.version@</version>
+      </extension>
+    </extensions>
+  </build>
+</project>

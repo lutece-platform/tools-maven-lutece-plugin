@@ -703,11 +703,25 @@ public abstract class AbstractLuteceWebappMojo
     {
         Set<Artifact> artifactSet = filterArtifacts( a -> ARTIFACT_BUILD_CONFIG.contentEquals( a.getArtifactId( ) ) );
 
-        if ( artifactSet == null || artifactSet.isEmpty(  ) || artifactSet.size(  ) > 1 )
+        if ( artifactSet.isEmpty(  ) )
+        {
+            // The dependency is what carries the version of the scripts to deploy, so the
+            // project decides it and build-config can evolve without touching this plugin.
+            // It is inherited, never written by hand, hence the hint.
+            throw new MojoExecutionException( "Project \"" + project.getName(  ) +
+                    "\" has no \"" + ARTIFACT_BUILD_CONFIG + "\" dependency, so the SQL build scripts" +
+                    " cannot be deployed to " + WEB_INF_SQL_PATH + "." +
+                    " That dependency comes from lutece-global-pom : inherit from it, or declare" +
+                    " fr.paris.lutece.tools:" + ARTIFACT_BUILD_CONFIG + " with scope provided." );
+        }
+
+        if ( artifactSet.size(  ) > 1 )
         {
             throw new MojoExecutionException( "Project \"" + project.getName(  ) +
-                                              "\" must have exactly one dependency named " + ARTIFACT_BUILD_CONFIG );
+                    "\" depends on several \"" + ARTIFACT_BUILD_CONFIG + "\" artifacts, so the version of the" +
+                    " SQL build scripts to deploy is ambiguous : " + artifactSet );
         }
+
         Artifact buildConfig = artifactSet.iterator( ).next( );
 
         Path sqlDir = Paths.get( targetDir.getAbsolutePath( ), WEB_INF_SQL_PATH );

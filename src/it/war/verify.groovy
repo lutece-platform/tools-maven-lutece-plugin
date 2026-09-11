@@ -23,8 +23,11 @@ assert has( 'WEB-INF/classes/sql/plugins/warplug/plugin/create_db_warplug.sql' )
         "the SQL is missing from the Liquibase classpath"
 assert has( 'WEB-INF/classes/META-INF/microprofile-config.properties' )
 
-// Unlike exploded-lite, the war does ship the third-party jars.
+// Unlike exploded-lite, the war does ship the third-party jars ...
 assert hasMatching( /WEB-INF\/lib\/commons-io-.*\.jar/ ) : "the third-party jar is missing from the war"
+// ... but not the provided ones, whose content is unpacked instead.
+assert !hasMatching( /WEB-INF\/lib\/build-config-.*\.jar/ ) : "a provided jar was shipped in the war"
+assert has( 'WEB-INF/sql/build.xml' ) : "the ant scripts are missing from the war"
 
 // The archive carries a manifest, so it was built through MavenArchiver.
 assert has( 'META-INF/MANIFEST.MF' ) : "no manifest in the war"

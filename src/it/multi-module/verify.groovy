@@ -23,7 +23,11 @@ assert !dat.contains( 'modA.pool' ) : "modA needs no pool and must not declare o
 // Third-party jars of every module are pooled in the shared WEB-INF/lib.
 List<String> jars = new File( shared, 'WEB-INF/lib' ).listFiles().collect { it.name }.sort()
 assert jars.any { it.startsWith( 'commons-io-' ) } : "modA's own jar is missing : ${jars}"
-assert jars.any { it.startsWith( 'build-config-' ) } : "build-config is missing : ${jars}"
+
+// build-config is provided : it carries the ant scripts that get unpacked into WEB-INF/sql,
+// the jar itself has no business being shipped in the webapp.
+assert !jars.any { it.startsWith( 'build-config-' ) } : "a provided jar was shipped : ${jars}"
+assert new File( shared, 'WEB-INF/sql/build.xml' ).isFile() : "the ant scripts were not unpacked"
 
 // commons-lang3 was requested in 3.14.0 by modA and 3.17.0 by modB. Exactly one must remain,
 // otherwise the webapp ships two versions of the same library on its classpath.

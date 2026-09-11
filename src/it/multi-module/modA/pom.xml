@@ -12,6 +12,9 @@
       <groupId>fr.paris.lutece.tools</groupId>
       <artifactId>build-config</artifactId>
       <version>3.0.1</version>
+      <!-- provided, exactly as lutece-global-pom declares it : the jar carries the ant
+           scripts to unpack, it must not be shipped in WEB-INF/lib -->
+      <scope>provided</scope>
     </dependency>
     <!-- also requested by modB, in another version -->
     <dependency>

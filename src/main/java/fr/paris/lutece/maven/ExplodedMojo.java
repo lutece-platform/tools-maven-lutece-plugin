@@ -148,7 +148,15 @@ public class ExplodedMojo
                 // Maven builds the root first : WEB-INF/plugins was still empty and the file
                 // declared no plugin at all.
                 getLog(  ).info( "Generate plugins.dat file" );
-                PluginDataService.generatePluginsDataFile( testWebappDirectory.getAbsolutePath(  ) );
+
+                try
+                {
+                    PluginDataService.generatePluginsDataFile( testWebappDirectory.getAbsolutePath(  ) );
+                }
+                catch ( IOException e )
+                {
+                    throw new MojoExecutionException( "Error while generating plugins.dat", e );
+                }
             }
         }
     }

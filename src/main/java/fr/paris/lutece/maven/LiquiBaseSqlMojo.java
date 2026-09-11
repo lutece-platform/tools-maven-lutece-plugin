@@ -47,6 +47,7 @@ import java.util.stream.Stream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -116,10 +117,9 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
                 if (mostRecentSqlScriptVersion != null && mostRecentSqlScriptVersion.compareTo(pluginVersion) > 0)
                     getLog().error("Some SQL files have version " + mostRecentSqlScriptVersion + " for plugin " + pluginName + " with version " + version);
             }
-        } catch (IOException e)
+        } catch (IOException | SqlProcessingException e)
         {
-            getLog().error("An error occurred while processing SQL files.", e);
-            throw new MojoExecutionException("Failed to process SQL files.", e);
+            throw new MojoExecutionException("Failed to process SQL files : " + e.getMessage(), e);
         }
     }
 
@@ -145,13 +145,48 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
     {
         try
         {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document doc = builder.parse(path.toFile());
+            Document doc = newSafeDocumentBuilder().parse(path.toFile());
             version = doc.getElementsByTagName("version").item(0).getTextContent();
             pluginName = doc.getElementsByTagName("name").item(0).getTextContent();
         } catch (Exception e)
         {
-            throw new RuntimeException(e);
+            throw new SqlProcessingException("Could not read the plugin descriptor " + path, e);
+        }
+    }
+
+    /**
+     * Builds a parser that resolves no external entity. A plugin descriptor is a project file,
+     * but the build must not read whatever an entity points at, nor reach out to the network.
+     * The DOCTYPE itself stays allowed : older descriptors may declare one.
+     *
+     * @return a hardened document builder
+     * @throws ParserConfigurationException
+     *             if the parser rejects the configuration
+     */
+    static DocumentBuilder newSafeDocumentBuilder() throws ParserConfigurationException
+    {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        return factory.newDocumentBuilder();
+    }
+
+    /**
+     * Raised when a SQL file or a plugin descriptor cannot be processed. Unchecked because the
+     * processing runs inside a Stream, but always turned into a MojoExecutionException by
+     * {@link #execute()} so that Maven reports it properly.
+     */
+    static class SqlProcessingException extends RuntimeException
+    {
+        private static final long serialVersionUID = 1L;
+
+        SqlProcessingException(String strMessage, Throwable cause)
+        {
+            super(strMessage, cause);
         }
     }
 
@@ -284,8 +319,7 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
             }
         } catch (Exception e)
         {
-            getLog().error("Error processing file: " + path.getFileName(), e);
-            throw new RuntimeException(e);
+            throw new SqlProcessingException("Error processing SQL file " + path, e);
         }
     }
     /**

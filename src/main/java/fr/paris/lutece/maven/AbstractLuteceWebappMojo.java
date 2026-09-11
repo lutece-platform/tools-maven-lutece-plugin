@@ -35,6 +35,7 @@ package fr.paris.lutece.maven;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -938,7 +939,7 @@ public abstract class AbstractLuteceWebappMojo
                 }
               sb.append("\n"); 
              
-              Files.write(liquibasePropertiesFile.toPath(), sb.toString().getBytes());    
+              Files.write(liquibasePropertiesFile.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));    
         }
         
         catch (Exception e)

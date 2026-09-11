@@ -36,8 +36,6 @@ package fr.paris.lutece.maven.utils.plugindat;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -50,26 +48,51 @@ import org.xml.sax.SAXException;
  */
 public class PluginDataParser
 {
-    static void parse( File file, List<PluginData> list )
+    /**
+     * Parses a plugin descriptor and appends its data to the list.
+     *
+     * Failures used to be logged to java.util.logging, which does not show in the Maven
+     * output : a descriptor that could not be read disappeared from plugins.dat silently.
+     *
+     * @param file
+     *            the plugin descriptor
+     * @param list
+     *            the list to append to
+     * @throws IOException
+     *             if the descriptor cannot be read or parsed
+     */
+    static void parse( File file, List<PluginData> list ) throws IOException
     {
         try
         {
-            SAXParserFactory factory = SAXParserFactory.newInstance(  );
-
-            // Create new SAX parser
-            SAXParser parser = factory.newSAXParser(  );
             PluginDataHandler handler = new PluginDataHandler(  );
-            parser.parse( file, handler );
+            newSafeParser(  ).parse( file, handler );
             list.add( handler.getPlugin(  ) );
-        } catch ( ParserConfigurationException ex )
+        } catch ( ParserConfigurationException | SAXException ex )
         {
-            Logger.getLogger( PluginDataParser.class.getName(  ) ).log( Level.SEVERE, null, ex );
-        } catch ( SAXException ex )
-        {
-            Logger.getLogger( PluginDataParser.class.getName(  ) ).log( Level.SEVERE, null, ex );
-        } catch ( IOException ex )
-        {
-            Logger.getLogger( PluginDataParser.class.getName(  ) ).log( Level.SEVERE, null, ex );
+            throw new IOException( "Could not parse the plugin descriptor " + file.getAbsolutePath(  ), ex );
         }
+    }
+
+    /**
+     * Builds a parser that resolves no external entity, so that a descriptor cannot make the
+     * build read an arbitrary file nor reach out to the network. The DOCTYPE itself stays
+     * allowed : older descriptors may declare one.
+     *
+     * @return a hardened SAX parser
+     * @throws ParserConfigurationException
+     *             if the parser rejects the configuration
+     * @throws SAXException
+     *             if a feature is not recognized
+     */
+    static SAXParser newSafeParser(  ) throws ParserConfigurationException, SAXException
+    {
+        SAXParserFactory factory = SAXParserFactory.newInstance(  );
+        factory.setFeature( "http://xml.org/sax/features/external-general-entities", false );
+        factory.setFeature( "http://xml.org/sax/features/external-parameter-entities", false );
+        factory.setFeature( "http://apache.org/xml/features/nonvalidating/load-external-dtd", false );
+        factory.setXIncludeAware( false );
+
+        return factory.newSAXParser(  );
     }
 }

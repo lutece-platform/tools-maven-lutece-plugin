@@ -46,24 +46,42 @@ class AssemblyMojosTest
     }
 
     @Test
-    @DisplayName( "the site assembly timestamp is UTC, whatever the build machine time zone" )
-    void siteAssemblyTimestampIsUtc( )
+    @DisplayName( "the archive timestamp ignores the build machine time zone" )
+    void archiveTimestampIgnoresTheMachineTimeZone( )
     {
         TimeZone previous = TimeZone.getDefault( );
         try
         {
+            // Epoch is 01:00 in Paris : CET, one hour ahead of UTC, in January 1970.
             TimeZone.setDefault( TimeZone.getTimeZone( "Pacific/Kiritimati" ) ); // UTC+14
-            assertEquals( "19700101.000000",
-                    AssemblySiteMojo.formatUtcTimestamp( "yyyyMMdd.HHmmss", new Date( 0L ) ) );
+            assertEquals( "19700101.010000", AbstractLuteceMojo.formatTimestamp( "yyyyMMdd.HHmmss",
+                    new Date( 0L ), AbstractLuteceMojo.ARCHIVE_TIMESTAMP_TIME_ZONE ) );
 
             TimeZone.setDefault( TimeZone.getTimeZone( "Pacific/Midway" ) ); // UTC-11
-            assertEquals( "19700101.000000",
-                    AssemblySiteMojo.formatUtcTimestamp( "yyyyMMdd.HHmmss", new Date( 0L ) ) );
+            assertEquals( "19700101.010000", AbstractLuteceMojo.formatTimestamp( "yyyyMMdd.HHmmss",
+                    new Date( 0L ), AbstractLuteceMojo.ARCHIVE_TIMESTAMP_TIME_ZONE ) );
         }
         finally
         {
             TimeZone.setDefault( previous );
         }
+    }
+
+    @Test
+    @DisplayName( "the archive timestamp reads in French local time, including summer time" )
+    void archiveTimestampReadsInFrenchLocalTime( )
+    {
+        assertEquals( "Europe/Paris", AbstractLuteceMojo.ARCHIVE_TIMESTAMP_TIME_ZONE );
+
+        // 2026-07-01T12:00:00Z : Paris is on CEST, two hours ahead.
+        Date summer = Date.from( java.time.Instant.parse( "2026-07-01T12:00:00Z" ) );
+        assertEquals( "20260701.140000", AbstractLuteceMojo.formatTimestamp( "yyyyMMdd.HHmmss",
+                summer, AbstractLuteceMojo.ARCHIVE_TIMESTAMP_TIME_ZONE ) );
+
+        // 2026-01-15T12:00:00Z : Paris is back on CET, one hour ahead.
+        Date winter = Date.from( java.time.Instant.parse( "2026-01-15T12:00:00Z" ) );
+        assertEquals( "20260115.130000", AbstractLuteceMojo.formatTimestamp( "yyyyMMdd.HHmmss",
+                winter, AbstractLuteceMojo.ARCHIVE_TIMESTAMP_TIME_ZONE ) );
     }
 
     @Test

@@ -34,7 +34,11 @@
 package fr.paris.lutece.maven;
 
 import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -212,6 +216,13 @@ public abstract class AbstractLuteceMojo
      * assembly built at 13:30 and one built at 01:30 produced the very same file name.
      */
     protected static final String ARCHIVE_TIMESTAMP_PATTERN = "yyMMdd-HHmm";
+
+    /**
+     * Time zone the archive timestamps are formatted in. Pinning it keeps the file names
+     * readable for the French teams that operate these assemblies, and keeps them stable
+     * whatever the time zone of the machine that happens to run the build.
+     */
+    protected static final String ARCHIVE_TIMESTAMP_TIME_ZONE = "Europe/Paris";
     protected static final String DATABASE_VENDOR_NONE = "none";
     protected static final String DATABASE_VENDOR_AUTO = "auto";
     protected static final Collection<String> DATABASE_VENDORS = Arrays.asList("hsqldb", "mysql", "oracle", "postgresql");
@@ -387,6 +398,26 @@ public abstract class AbstractLuteceMojo
     {
         return (Set<Artifact>) data.computeIfAbsent( strKey,
                 (  ) -> Collections.synchronizedSet( new LinkedHashSet<Artifact>(  ) ) );
+    }
+
+    /**
+     * Formats a timestamp in the given time zone, rather than in the one of the machine
+     * running the build.
+     *
+     * @param strPattern
+     *            the date pattern
+     * @param date
+     *            the date to format
+     * @param strTimeZoneId
+     *            the time zone the timestamp reads in
+     * @return the formatted timestamp
+     */
+    static String formatTimestamp( String strPattern, Date date, String strTimeZoneId )
+    {
+        DateFormat formatter = new SimpleDateFormat( strPattern );
+        formatter.setTimeZone( TimeZone.getTimeZone( strTimeZoneId ) );
+
+        return formatter.format( date );
     }
 
     public void logBanner() {

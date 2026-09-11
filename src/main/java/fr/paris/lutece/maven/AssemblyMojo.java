@@ -467,11 +467,9 @@ public class AssemblyMojo
      */
     private File getArchiveFile( String classifier, boolean timestamp, String extension )
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat( ARCHIVE_TIMESTAMP_PATTERN );
-
         return new File( getOutputDirectory(  ),
                          artifactName + ( ( null != classifier ) ? ( "-" + classifier ) : "" ) +
-                         ( timestamp ? ( "-" + dateFormat.format( new Date(  ) ).toString(  ) ) : "" ) + "." +
-                         extension );
+                         ( timestamp ? ( "-" + formatTimestamp( ARCHIVE_TIMESTAMP_PATTERN, new Date(  ),
+                                 ARCHIVE_TIMESTAMP_TIME_ZONE ) ) : "" ) + "." + extension );
     }
 }

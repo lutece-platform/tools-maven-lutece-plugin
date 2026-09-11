@@ -81,12 +81,24 @@ public class AssemblySiteMojo
     private static final String SNAPSHOT_PATTERN = "SNAPSHOT";
 
     /**
-     * The output date format.
+     * The output date format of the timestamp substituted for the SNAPSHOT marker.
      *
+     * Kept under its historical name so that existing poms configuring it keep working, even
+     * though the timestamp is no longer formatted in UTC. See timestampTimeZone.
      */
     @Parameter(
             defaultValue = "yyyyMMdd.HHmmss", required = true )
     private String utcTimestampPattern;
+
+    /**
+     * The time zone the timestamp reads in. Defaults to the French time zone rather than to
+     * the one of the machine running the build, so that the same build produces the same file
+     * name everywhere.
+     */
+    @Parameter(
+            property = "timestampTimeZone",
+            defaultValue = ARCHIVE_TIMESTAMP_TIME_ZONE )
+    private String timestampTimeZone;
 
     /**
      * The name of the generated WAR file.
@@ -151,24 +163,6 @@ public class AssemblySiteMojo
         }
     }
 
-    /**
-     * Formats a timestamp in UTC, as the utcTimestampPattern parameter name promises. A plain
-     * SimpleDateFormat would use the build machine's time zone instead.
-     *
-     * @param strPattern
-     *            the date pattern
-     * @param date
-     *            the date to format
-     * @return the formatted UTC timestamp
-     */
-    static String formatUtcTimestamp( String strPattern, Date date )
-    {
-        DateFormat utcDateFormatter = new SimpleDateFormat( strPattern );
-        utcDateFormatter.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
-
-        return utcDateFormatter.format( date );
-    }
-
     private void assemblySite(  )
                        throws MojoExecutionException
     {
@@ -180,7 +174,7 @@ public class AssemblySiteMojo
         // put the timestamp in the assembly name
         if ( ArtifactUtils.isSnapshot( project.getVersion(  ) ) )
         {
-            String newVersion = formatUtcTimestamp( utcTimestampPattern, new Date(  ) );
+            String newVersion = formatTimestamp( utcTimestampPattern, new Date(  ), timestampTimeZone );
             finalName = StringUtils.replace( finalName, SNAPSHOT_PATTERN, newVersion );
         }
 

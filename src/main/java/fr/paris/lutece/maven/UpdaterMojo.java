@@ -373,10 +373,10 @@ public class UpdaterMojo extends AbstractLuteceWebappMojo
      */
     private File getArchiveFile(String classifier, boolean timestamp, String extension, String strZipVersion)
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat(ARCHIVE_TIMESTAMP_PATTERN);
-
         return new File(getOutputDirectory(),
                 project.getArtifactId() + ((null != classifier) ? ("-" + classifier) : "") + "-"
-                + strZipVersion + (timestamp ? ("-" + dateFormat.format(new Date()).toString()) : "") + "." + extension);
+                + strZipVersion
+                + (timestamp ? ("-" + formatTimestamp(ARCHIVE_TIMESTAMP_PATTERN, new Date(), ARCHIVE_TIMESTAMP_TIME_ZONE)) : "")
+                + "." + extension);
     }
 }

@@ -7,7 +7,7 @@
 
   <description>
     site-assembly builds a site war. The version is a SNAPSHOT on purpose : the goal then
-    substitutes a UTC timestamp for the SNAPSHOT marker in the file name.
+    substitutes a timestamp, read in the French time zone, for the SNAPSHOT marker.
   </description>
 
   <repositories>

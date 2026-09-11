@@ -34,7 +34,8 @@
 package fr.paris.lutece.maven;
 
 import java.io.File;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
@@ -48,6 +49,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.logging.LogEnabled;
+import org.eclipse.aether.SessionData;
 import org.codehaus.plexus.logging.Logger;
 
 /**
@@ -105,6 +107,13 @@ public abstract class AbstractLuteceMojo
     protected static final String LUTECE_DIRECTORY = "lutece";
 
     protected static final String ARTIFACT_BUILD_CONFIG = "build-config";
+
+    /**
+     * Artifacts never shipped in WEB-INF/lib : transitive dependencies do not always carry a
+     * usable scope, so they are excluded by name as well.
+     */
+    protected static final String JUNIT = "junit";
+    protected static final String SERVLET_API = "servlet-api";
 
     /**
      * Constants used to create inclusion or exclusion rules, for the zip, jar
@@ -302,13 +311,13 @@ public abstract class AbstractLuteceMojo
     protected ArtifactCollector artifactCollector;
 
     /**
-     * The set of artifacts required by the Multi Project, including transitive dependencies.
-     *
+     * Keys under which the multi-project artifact sets are shared between the modules of a
+     * reactor build.
      */
-    protected static Set<Artifact> multiProjectArtifacts = new HashSet<>(  );
-
-    /** The multi project artifacts. */
-    protected static Set<Artifact> multiProjectArtifactsCopied = new HashSet<>(  );
+    private static final String MULTI_PROJECT_ARTIFACTS_KEY =
+        AbstractLuteceMojo.class.getName(  ) + ".multiProjectArtifacts";
+    private static final String MULTI_PROJECT_ARTIFACTS_COPIED_KEY =
+        AbstractLuteceMojo.class.getName(  ) + ".multiProjectArtifactsCopied";
 
     /**
     * Plexus logger needed for debugging manual artifact resolution.
@@ -337,6 +346,47 @@ public abstract class AbstractLuteceMojo
         }
         throw new MojoExecutionException( "This goal can be invoked only on a " +
                                           String.join( " or ", allowedPackagings ) + " project." );
+    }
+
+    /**
+     * The set of artifacts required by the multi project, including transitive dependencies.
+     * Every module of the reactor contributes to it.
+     *
+     * @return the shared set, never null
+     */
+    protected Set<Artifact> getMultiProjectArtifacts(  )
+    {
+        return getSharedArtifacts( session.getRepositorySession(  ).getData(  ), MULTI_PROJECT_ARTIFACTS_KEY );
+    }
+
+    /**
+     * The multi project artifacts already copied to the shared WEB-INF/lib.
+     *
+     * @return the shared set, never null
+     */
+    protected Set<Artifact> getMultiProjectArtifactsCopied(  )
+    {
+        return getSharedArtifacts( session.getRepositorySession(  ).getData(  ), MULTI_PROJECT_ARTIFACTS_COPIED_KEY );
+    }
+
+    /**
+     * Returns a set shared by every module of the current build.
+     *
+     * These sets used to be static fields. The session data lives exactly as long as one build,
+     * so the state no longer leaks from one build to the next in a reused JVM (daemon, IDE), and
+     * a synchronized set makes it safe for the modules a parallel build (-T) runs concurrently.
+     *
+     * @param data
+     *            the current session data
+     * @param strKey
+     *            the key the set is stored under
+     * @return the shared set, created on first access
+     */
+    @SuppressWarnings( "unchecked" )
+    static Set<Artifact> getSharedArtifacts( SessionData data, String strKey )
+    {
+        return (Set<Artifact>) data.computeIfAbsent( strKey,
+                (  ) -> Collections.synchronizedSet( new LinkedHashSet<Artifact>(  ) ) );
     }
 
     public void logBanner() {

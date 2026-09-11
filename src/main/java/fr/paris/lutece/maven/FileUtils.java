@@ -35,14 +35,11 @@ package fr.paris.lutece.maven;
 
 import org.codehaus.plexus.util.IOUtil;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,7 +60,6 @@ import java.util.stream.Stream;
  * </ul>
  */
 public class FileUtils
-    extends org.codehaus.plexus.util.FileUtils
 {
     // The name of subversion's administrative directories
     private static final String SVN_DIRECTORY = ".svn";
@@ -76,49 +72,6 @@ public class FileUtils
     protected static final String REGEXP_SITE_TECH = "(.)*/tech(/.)*";
     protected static final String REGEXP_SITE_TECH_DIRECTORY = "(.)*/tech";
     protected static final String REGEXP_SITE_XML = "(.)*site/site(.)*.xml";
-    private static int nNbFileModified;
-    private static int nNbFileCopy;
-
-    /**
-     * Gets the nb file modified.
-     *
-     * @return the nb file modified
-     */
-    public static int getNbFileModified(  )
-    {
-        return nNbFileModified;
-    }
-
-    /**
-     * Sets the nb file modified.
-     *
-     * @param nbFileMdofied the new nb file modified
-     */
-    public static void setNbFileModified( int nbFileMdofied )
-    {
-        nNbFileModified = nbFileMdofied;
-    }
-
-    /**
-     * Gets the nb file copy.
-     *
-     * @return the nb file copy
-     */
-    public static int getNbFileCopy(  )
-    {
-        return nNbFileCopy;
-    }
-
-    /**
-     * Sets the nb file copy.
-     *
-     * @param nbFileCopy the new nb file copy
-     */
-    public static void setNbFileCopy( int nbFileCopy )
-    {
-        nNbFileCopy = nbFileCopy;
-    }
-
     /**
      * Tells whether a file is a site source that must not be copied as-is : those are processed
      * by the site plugin.
@@ -192,7 +145,7 @@ public class FileUtils
      * @throws IOException
      *             if an I/O exception occurs.
      */
-    public static void copyDirectoryStructureIfModified( File sourceDirectory, File destinationDirectory )
+    public static int copyDirectoryStructureIfModified( File sourceDirectory, File destinationDirectory )
                                                  throws IOException
     {
         if ( ! sourceDirectory.exists(  ) )
@@ -202,6 +155,12 @@ public class FileUtils
 
         File[] files = sourceDirectory.listFiles(  );
 
+        if ( files == null )
+        {
+            throw new IOException( "Could not list directory (" + sourceDirectory.getAbsolutePath(  ) + ")." );
+        }
+
+        int nCopied = 0;
         String sourcePath = sourceDirectory.getAbsolutePath(  );
 
         for (File file : files) {
@@ -217,7 +176,10 @@ public class FileUtils
 
                 if ( ! isExcludedSiteFile( file ) )
                 {
-                    copyFileToDirectoryIfModified( file, destination );
+                    if ( copyFileToDirectoryIfModified( file, destination ) )
+                    {
+                        nCopied++;
+                    }
                 }
             } else if ( file.isDirectory(  ) )
             {
@@ -230,13 +192,15 @@ public class FileUtils
                                                destination.getAbsolutePath(  ) + "'." );
                     }
 
-                    copyDirectoryStructureIfModified( file, destination );
+                    nCopied += copyDirectoryStructureIfModified( file, destination );
                 }
             } else
             {
                 throw new IOException( "Unknown file type: " + file.getAbsolutePath(  ) );
             }
         }
+
+        return nCopied;
     }
 
     /**
@@ -255,8 +219,8 @@ public class FileUtils
      * @throws IOException
      *             if an I/O exception occurs.
      */
-    public static void copyDirectoryStructure( File sourceDirectory, File destinationDirectory )
-                                       throws IOException
+    public static int copyDirectoryStructure( File sourceDirectory, File destinationDirectory )
+                                                 throws IOException
     {
         if ( ! sourceDirectory.exists(  ) )
         {
@@ -265,6 +229,12 @@ public class FileUtils
 
         File[] files = sourceDirectory.listFiles(  );
 
+        if ( files == null )
+        {
+            throw new IOException( "Could not list directory (" + sourceDirectory.getAbsolutePath(  ) + ")." );
+        }
+
+        int nCopied = 0;
         String sourcePath = sourceDirectory.getAbsolutePath(  );
 
         for (File file : files) {
@@ -281,7 +251,7 @@ public class FileUtils
                 if ( ! isExcludedSiteFile( file ) )
                 {
                     org.codehaus.plexus.util.FileUtils.copyFileToDirectory( file, destination );
-                    nNbFileCopy++;
+                    nCopied++;
                 }
             } else if ( file.isDirectory(  ) )
             {
@@ -294,13 +264,15 @@ public class FileUtils
                                                destination.getAbsolutePath(  ) + "'." );
                     }
 
-                    copyDirectoryStructure( file, destination );
+                    nCopied += copyDirectoryStructure( file, destination );
                 }
             } else
             {
                 throw new IOException( "Unknown file type: " + file.getAbsolutePath(  ) );
             }
         }
+
+        return nCopied;
     }
 
     /**
@@ -390,7 +362,7 @@ public class FileUtils
      *             <code>destinationDirectory</code> cannot be written to, or
      *             an IO error occurs during copying.
      */
-    public static void copyFileToDirectoryIfModified( final File source, final File destinationDirectory )
+    public static boolean copyFileToDirectoryIfModified( final File source, final File destinationDirectory )
                                               throws IOException
     {
         if ( destinationDirectory.exists(  ) && ! destinationDirectory.isDirectory(  ) )
@@ -398,9 +370,9 @@ public class FileUtils
             throw new IllegalArgumentException( "Destination is not a directory" );
         }
 
-        copyFileIfModified( source,
-                            new File( destinationDirectory,
-                                      source.getName(  ) ) );
+        return copyFileIfModified( source,
+                                   new File( destinationDirectory,
+                                             source.getName(  ) ) );
     }
 
     /**
@@ -431,7 +403,6 @@ public class FileUtils
         if ( destination.lastModified(  ) < source.lastModified(  ) )
         {
             copyFile( source, destination );
-            nNbFileModified++;
 
             return true;
         }
@@ -497,25 +468,6 @@ public class FileUtils
     }
 
     /**
-    * Create a file.
-    *
-    * @param strFolderPath the folder path
-    * @param strFileName the file name
-    * @param strFileOutPut the file output
-    * @throws IOException exception if there is an error during the deletion
-    */
-    public static void createFile( String strFolderPath, String strFileName, String strFileOutPut )
-                           throws IOException
-    {
-        File file = new File( strFolderPath + strFileName );
-
-        // Delete the file if it exists
-        deleteFile( strFolderPath, strFileName );
-
-        org.apache.commons.io.FileUtils.writeStringToFile( file, strFileOutPut );
-    }
-
-    /**
      * Delete a file
      * @param strFolderPath the folder path
      * @param strFileName the file name
@@ -532,49 +484,6 @@ public class FileUtils
             {
                 throw new IOException( "ERROR when deleting the file or folder " + strFolderPath + strFileName );
             }
-        }
-    }
-
-    /**
-     * Read the last line from the given file
-     * @param strFile the file absolute path (ex : /home/filetopath/file.txt)
-     * @return the last line, an empty string if the file does not exists
-     */
-    public static String readLastLine( String strFile )
-    {
-        File file = new File( strFile );
-        if ( !file.exists(  ) )
-        {
-            return "";
-        }
-        String strLastLine = "";
-        try ( BufferedReader br = new BufferedReader( new InputStreamReader( new FileInputStream( file ) ) ) )
-        {
-            String strTmp;
-            while ( ( strTmp = br.readLine(  ) ) != null )
-            {
-                strLastLine = strTmp;
-            }
-        } catch ( IOException e )
-        {
-            // silently return empty string on error
-        }
-        return strLastLine;
-    }
-
-    /**
-     * Write to the given file
-     * @param strContent the content to write
-     * @param strFile the file
-     */
-    public static void writeToFile( String strContent, String strFile )
-    {
-        try ( FileWriter fw = new FileWriter( strFile, false ) )
-        {
-            fw.write( strContent );
-        } catch ( IOException e )
-        {
-            // silent failure - callers do not expect exceptions
         }
     }
 }

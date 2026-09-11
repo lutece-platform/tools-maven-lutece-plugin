@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -22,14 +21,6 @@ class FileUtilsTest
 {
     @TempDir
     Path tempDir;
-
-    @BeforeEach
-    void resetCounters( )
-    {
-        // The counters are static : without this reset, tests leak into each other.
-        FileUtils.setNbFileCopy( 0 );
-        FileUtils.setNbFileModified( 0 );
-    }
 
     private File writeFile( Path dir, String strRelativePath, String strContent ) throws IOException
     {
@@ -49,11 +40,10 @@ class FileUtilsTest
 
         assertTrue( FileUtils.copyFileIfModified( source, destination ), "the file should have been copied" );
         assertTrue( destination.exists( ) );
-        assertEquals( 1, FileUtils.getNbFileModified( ), "the copy should have been counted" );
     }
 
     @Test
-    @DisplayName( "copyFileIfModified skips an up-to-date target and counts nothing" )
+    @DisplayName( "copyFileIfModified skips an up-to-date target" )
     void copyFileIfModifiedSkipsUpToDateTarget( ) throws IOException
     {
         File source = writeFile( tempDir, "src/a.txt", "content" );
@@ -61,15 +51,24 @@ class FileUtilsTest
 
         source.setLastModified( 1_000_000L );
         destination.setLastModified( 2_000_000L );
-        FileUtils.setNbFileModified( 0 );
 
         assertFalse( FileUtils.copyFileIfModified( source, destination ), "the file should have been skipped" );
-        assertEquals( 0, FileUtils.getNbFileModified( ), "nothing should have been counted" );
     }
 
     @Test
-    @DisplayName( "copyDirectoryStructureIfModified reports how many files it copied" )
-    void copyDirectoryStructureIfModifiedCountsCopiedFiles( ) throws IOException
+    @DisplayName( "copyDirectoryStructure returns how many files it copied" )
+    void copyDirectoryStructureReturnsCopiedCount( ) throws IOException
+    {
+        Path source = tempDir.resolve( "src" );
+        writeFile( source, "a.txt", "a" );
+        writeFile( source, "sub/b.txt", "b" );
+
+        assertEquals( 2, FileUtils.copyDirectoryStructure( source.toFile( ), tempDir.resolve( "dest" ).toFile( ) ) );
+    }
+
+    @Test
+    @DisplayName( "copyDirectoryStructureIfModified returns how many files it copied" )
+    void copyDirectoryStructureIfModifiedReturnsCopiedCount( ) throws IOException
     {
         Path source = tempDir.resolve( "src" );
         writeFile( source, "a.txt", "a" );
@@ -77,9 +76,26 @@ class FileUtilsTest
         writeFile( source, "sub/c.txt", "c" );
 
         File destination = tempDir.resolve( "dest" ).toFile( );
-        FileUtils.copyDirectoryStructureIfModified( source.toFile( ), destination );
 
-        assertEquals( 3, FileUtils.getNbFileModified( ), "the three copied files should have been counted" );
+        assertEquals( 3, FileUtils.copyDirectoryStructureIfModified( source.toFile( ), destination ),
+                "the three copied files should be reported" );
+        assertEquals( 0, FileUtils.copyDirectoryStructureIfModified( source.toFile( ), destination ),
+                "the second pass should copy nothing" );
+    }
+
+    @Test
+    @DisplayName( "each copy reports its own count, independently of the others" )
+    void copiesDoNotShareState( ) throws IOException
+    {
+        Path first = tempDir.resolve( "first" );
+        writeFile( first, "a.txt", "a" );
+        Path second = tempDir.resolve( "second" );
+        writeFile( second, "b.txt", "b" );
+        writeFile( second, "c.txt", "c" );
+
+        // With the former static counters, the second call reported the sum of both.
+        assertEquals( 1, FileUtils.copyDirectoryStructure( first.toFile( ), tempDir.resolve( "d1" ).toFile( ) ) );
+        assertEquals( 2, FileUtils.copyDirectoryStructure( second.toFile( ), tempDir.resolve( "d2" ).toFile( ) ) );
     }
 
     @Test
@@ -117,21 +133,5 @@ class FileUtilsTest
         assertTrue( FileUtils.isExcludedSiteFile( "/proj/src/site/xdoc/index.xml" ) );
         assertTrue( FileUtils.isExcludedSiteDirectory( "/proj/src/tech" ) );
         assertFalse( FileUtils.isExcludedSiteFile( "/proj/webapp/js/app.js" ) );
-    }
-
-    @Test
-    @DisplayName( "copyDirectoryStructureIfModified counts nothing when everything is up to date" )
-    void copyDirectoryStructureIfModifiedCountsNothingWhenUpToDate( ) throws IOException
-    {
-        Path source = tempDir.resolve( "src" );
-        writeFile( source, "a.txt", "a" );
-
-        File destination = tempDir.resolve( "dest" ).toFile( );
-        FileUtils.copyDirectoryStructureIfModified( source.toFile( ), destination );
-        FileUtils.setNbFileModified( 0 );
-
-        FileUtils.copyDirectoryStructureIfModified( source.toFile( ), destination );
-
-        assertEquals( 0, FileUtils.getNbFileModified( ), "the second pass should have copied nothing" );
     }
 }

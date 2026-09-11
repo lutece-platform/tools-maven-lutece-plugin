@@ -57,7 +57,6 @@ import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
 
 import fr.paris.lutece.maven.utils.plugindat.PluginDataService;
 
@@ -84,15 +83,6 @@ import fr.paris.lutece.maven.utils.plugindat.PluginDataService;
 public class ExplodedMojo
     extends AbstractLuteceWebappMojo
 {
-    /**
-     * The name of the servlet api artifact id.
-     */
-    protected static final String SERVLET_API = "servlet-api";
-    private static final String TMP_DIR = "/WEB-INF/tmp/";
-    private static final String TMP_FILE_ID_LAST_PROJECT = "idLastProject";
-    private static final String TMP_FILE_MULTI_PROJECT_LOCAL_CONF_DIR = "multiProjectLocalConfDir";
-    private static MavenProject lastProject;
-    private static File multiProjectlocalConfDirectory;
 
     /**
      * Executes the mojo on the current project.
@@ -111,10 +101,6 @@ public class ExplodedMojo
         {
             // Execution for lutece-parent-pom
 
-            // getLog().warn( "Only calling goal on modules" );
-            lastProject = reactorProjects.get( reactorProjects.size(  ) - 1 );
-            multiProjectlocalConfDirectory = localConfDirectory;
-
             getLog(  ).info( "------------------------------------------------------------------------" );
             getLog(  ).info( "Building Lutece Multi Project" );
             getLog(  ).info( "   explode local configuration, copy dependencies" );
@@ -124,8 +110,7 @@ public class ExplodedMojo
             getLog(  ).info( "Generate plugins.dat file" );
             PluginDataService.generatePluginsDataFile( testWebappDirectory.getAbsolutePath(  ) );
 
-            explodeMultiProjectUserConfigurationFiles( getRootProjectBuildDirectory(  ),
-                                                       multiProjectlocalConfDirectory );
+            explodeMultiProjectUserConfigurationFiles( getRootProjectBuildDirectory(  ), localConfDirectory );
         } else
         {
             // If the following condition returns "true", then it is a multi-project
@@ -159,94 +144,6 @@ public class ExplodedMojo
             explodeWebapp( testWebappDirectory );
             explodeConfigurationFiles( testWebappDirectory );
             explodeSqlFiles(testWebappDirectory, targetDatabaseVendor);
-        }
-    }
-
-    /**
-     * Execute m2 mojo.
-     *
-     * @throws MojoExecutionException the mojo execution exception
-     * @throws MojoFailureException the mojo failure exception
-     * @deprecated use {@link #execute()} instead for Maven 3
-     */
-    @Deprecated
-    public void executeM2Mojo(  )
-                       throws MojoExecutionException, MojoFailureException
-    {
-        validatePackaging( LUTECE_CORE_PACKAGING, LUTECE_PLUGIN_PACKAGING, LUTECE_SITE_PACKAGING, POM_PACKAGING );
-
-        if ( POM_PACKAGING.equals( project.getPackaging(  ) ) && project.isExecutionRoot(  ) )
-        {
-            getLog(  ).warn( "Only calling goal on modules" );
-
-            lastProject = reactorProjects.get( reactorProjects.size(  ) - 1 );
-            multiProjectlocalConfDirectory = localConfDirectory;
-
-            // Create files in order to "save" the lastProjectId and the multiProjectLocalConfDir for the other modules
-            try
-            {
-                FileUtils.createFile( getRootProjectBuildDirectory(  ) + TMP_DIR,
-                                      TMP_FILE_ID_LAST_PROJECT,
-                                      lastProject.getId(  ) );
-                FileUtils.createFile( getRootProjectBuildDirectory(  ) + TMP_DIR,
-                                      TMP_FILE_MULTI_PROJECT_LOCAL_CONF_DIR,
-                                      multiProjectlocalConfDirectory.getAbsolutePath(  ) );
-            } catch ( IOException e )
-            {
-                getLog(  ).error( e );
-            }
-        } else
-        {
-            if ( ( reactorProjects.size(  ) > 1 ) && ! project.isExecutionRoot(  ) )
-            {
-                testWebappDirectory = getRootProjectBuildDirectory(  );
-            }
-
-            explodeWebapp( testWebappDirectory );
-            explodeConfigurationFiles( testWebappDirectory );
-
-            // Get the IdLastProject and the multiProjectLocalConfDirectory
-            String strIdLastProject =
-                FileUtils.readLastLine( getRootProjectBuildDirectory(  ) + TMP_DIR + TMP_FILE_ID_LAST_PROJECT );
-            String multiProjectLocalConfDirectory =
-                FileUtils.readLastLine( getRootProjectBuildDirectory(  ) + TMP_DIR +
-                                        TMP_FILE_MULTI_PROJECT_LOCAL_CONF_DIR );
-            multiProjectlocalConfDirectory = new File( multiProjectLocalConfDirectory );
-
-            if ( project.getId(  ).equals( strIdLastProject ) )
-            {
-                getLog(  ).info( "------------------------------------------------------------------------" );
-                getLog(  ).info( "Building Lutece Multi Project" );
-                getLog(  ).info( "   explode local configuration, copy dependencies" );
-                getLog(  ).info( "------------------------------------------------------------------------" );
-
-                // generate plugins.dat
-                getLog(  ).info( "Generate plugins.dat file" );
-                PluginDataService.generatePluginsDataFile( testWebappDirectory.getAbsolutePath(  ) );
-
-                explodeMultiProjectUserConfigurationFiles( getRootProjectBuildDirectory(  ),
-                                                           multiProjectlocalConfDirectory );
-
-                // create  directory WEB-INF/lib in lutece-multi-project
-                File webinfLib = new File( testWebappDirectory, "WEB-INF/lib" );
-                webinfLib.mkdirs(  );
-
-                // copy dependencies in directory WEB-INF/lib
-                getLog(  ).info( "Copy dependencies into lutece-multi-project target directory" );
-                copyDependencies( webinfLib,
-                                  doDependencyResolution(  ) );
-
-                // Remove the tmp files
-                try
-                {
-                    FileUtils.deleteFile( getRootProjectBuildDirectory(  ) + TMP_DIR, TMP_FILE_ID_LAST_PROJECT );
-                    FileUtils.deleteFile( getRootProjectBuildDirectory(  ) + TMP_DIR,
-                                          TMP_FILE_MULTI_PROJECT_LOCAL_CONF_DIR );
-                } catch ( IOException e )
-                {
-                    getLog(  ).error( e );
-                }
-            }
         }
     }
 
@@ -373,7 +270,7 @@ public class ExplodedMojo
         try
         {
             artifactResolutionResult =
-                artifactCollector.collect( multiProjectArtifacts,
+                artifactCollector.collect( getMultiProjectArtifacts(  ),
                                            project.getArtifact(  ),
                                            localRepository,
                                            remoteRepositories,
@@ -449,47 +346,52 @@ public class ExplodedMojo
     {
         getLog(  ).info( "Building lists of artifacts to copy and to remove" );
 
-        for ( Artifact artifact : artifactsReturn )
+        Set<Artifact> multiProjectArtifactsCopied = getMultiProjectArtifactsCopied(  );
+
+        synchronized ( multiProjectArtifactsCopied )
         {
-            boolean bIsInMultiProject = false;
-
-            for ( Artifact multiprojetArtifact : multiProjectArtifactsCopied )
+            for ( Artifact artifact : artifactsReturn )
             {
-                // Check artifact ID
-                if ( artifact.getArtifactId(  ).equals( multiprojetArtifact.getArtifactId(  ) ) &&
-                         artifact.getGroupId(  ).equals( multiprojetArtifact.getGroupId(  ) ) )
-                {
-                    //Workaround MAVENPLUGIN-33 - NullPointerException when doing multi-project with excluded dependencies
-                    //Some excluded artifacts are in the list but with a null VersionRange, which triggers an NPE in getSelectedVersion()..
-                    //Skip them because we want to exclude them anyway.
-                    if ( artifact.getVersionRange( ) != null ) {
-                        // Compare version
-                        try
-                        {
-                            if ( artifact.getSelectedVersion(  ).compareTo( multiprojetArtifact.getSelectedVersion(  ) ) > 0 )
-                            {
-                                artifactsToDelete.add( multiprojetArtifact );
-                            } else
-                            {
-                                bIsInMultiProject = true;
-                            }
-                        } catch ( OverConstrainedVersionException e )
-                        {
-                            throw new MojoExecutionException( "Error while removing comparing versions", e );
-                        }
-                    }
+                boolean bIsInMultiProject = false;
 
-                    break;
+                for ( Artifact multiprojetArtifact : multiProjectArtifactsCopied )
+                {
+                    // Check artifact ID
+                    if ( artifact.getArtifactId(  ).equals( multiprojetArtifact.getArtifactId(  ) ) &&
+                             artifact.getGroupId(  ).equals( multiprojetArtifact.getGroupId(  ) ) )
+                    {
+                        //Workaround MAVENPLUGIN-33 - NullPointerException when doing multi-project with excluded dependencies
+                        //Some excluded artifacts are in the list but with a null VersionRange, which triggers an NPE in getSelectedVersion()..
+                        //Skip them because we want to exclude them anyway.
+                        if ( artifact.getVersionRange( ) != null ) {
+                            // Compare version
+                            try
+                            {
+                                if ( artifact.getSelectedVersion(  ).compareTo( multiprojetArtifact.getSelectedVersion(  ) ) > 0 )
+                                {
+                                    artifactsToDelete.add( multiprojetArtifact );
+                                } else
+                                {
+                                    bIsInMultiProject = true;
+                                }
+                            } catch ( OverConstrainedVersionException e )
+                            {
+                                throw new MojoExecutionException( "Error while removing comparing versions", e );
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
+                if ( ! bIsInMultiProject )
+                {
+                    artifactsToCopy.add( artifact );
                 }
             }
 
-            if ( ! bIsInMultiProject )
-            {
-                artifactsToCopy.add( artifact );
-            }
+            multiProjectArtifactsCopied.removeAll( artifactsToDelete );
+            multiProjectArtifactsCopied.addAll( artifactsToCopy );
         }
-
-        multiProjectArtifactsCopied.removeAll( artifactsToDelete );
-        multiProjectArtifactsCopied.addAll( artifactsToCopy );
     }
 }

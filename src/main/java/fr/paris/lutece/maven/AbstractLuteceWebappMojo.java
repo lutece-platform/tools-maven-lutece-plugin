@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -52,6 +53,9 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
 import org.apache.maven.model.Resource;
@@ -236,42 +240,10 @@ public abstract class AbstractLuteceWebappMojo
 
             if ( ! isInplace && webappSourceDirectory.exists(  ) )
             {
-                // Copy project-specific webapp components
-                if ( ! isUpdate )
-                {
-                    // First deployment : copy all files, in case
-                    // project-specific files are meant to overwrite files from
-                    // the core or the plugins.
-                    FileUtils.copyDirectoryStructure( webappSourceDirectory, targetDir );
-
-                    if ( FileUtils.getNbFileCopy(  ) == 0 )
-                    {
-                        getLog(  ).info( "Nothing to copy - all webapp files are up to date" );
-                    } else
-                    {
-                        // we can't know how many file has been copied anymore
-                        // due to plexus fileUtils
-                        getLog(  ).info( "Copying webapp files" );
-                    }
-
-                    FileUtils.setNbFileCopy( 0 );
-                } else
-                {
-                    // This time only overwrite newer files, since we are sure
-                    // that all files common with the core have either been
-                    // overwritten at webapp creation, or are older
-                    FileUtils.copyDirectoryStructureIfModified( webappSourceDirectory, targetDir );
-
-                    if ( FileUtils.getNbFileModified(  ) == 0 )
-                    {
-                        getLog(  ).info( "Nothing to update - all webapp files are up to date" );
-                    } else
-                    {
-                        getLog(  ).info( "Copying " + FileUtils.getNbFileModified(  ) + " webapp files" );
-                    }
-
-                    FileUtils.setNbFileModified( 0 );
-                }
+                // On first deployment copy every file, in case project-specific files are meant
+                // to overwrite files from the core or the plugins. Afterwards only overwrite newer
+                // files : common files have either been overwritten at creation, or are older.
+                logCopied( copyDirectory( webappSourceDirectory, targetDir, isUpdate ), "webapp files" );
             }
 
             // Copy SQL files
@@ -281,36 +253,7 @@ public abstract class AbstractLuteceWebappMojo
 
                 File sqlTargetDir = new File( targetDir, WEB_INF_SQL_PATH );
 
-                if ( ! isUpdate )
-                {
-                    FileUtils.copyDirectoryStructure( sqlDirectory, sqlTargetDir );
-
-                    if ( FileUtils.getNbFileCopy(  ) == 0 )
-                    {
-                        getLog(  ).info( "Nothing to copy - all sql files are up to date" );
-                    } else
-                    {
-                        getLog(  ).info( "Copying " + FileUtils.getNbFileCopy(  ) + " sql files" );
-                    }
-
-                    FileUtils.setNbFileCopy( 0 );
-                } else
-                {
-                    // This time only overwrite newer files, since we are sure
-                    // that all files common with the core have either been
-                    // overwritten at webapp creation, or are older
-                    FileUtils.copyDirectoryStructureIfModified( sqlDirectory, sqlTargetDir );
-
-                    if ( FileUtils.getNbFileModified(  ) == 0 )
-                    {
-                        getLog(  ).info( "Nothing to update - all sql files are up to date" );
-                    } else
-                    {
-                        getLog(  ).info( "Copying " + FileUtils.getNbFileModified(  ) + " sql files" );
-                    }
-
-                    FileUtils.setNbFileModified( 0 );
-                }
+                logCopied( copyDirectory( sqlDirectory, sqlTargetDir, isUpdate ), "sql files" );
             }
 
             //Copy Site User files
@@ -320,36 +263,7 @@ public abstract class AbstractLuteceWebappMojo
 
                 File siteUserTargetDir = new File( targetDir, WEB_INF_DOC_XML_PATH );
 
-                if ( ! isUpdate )
-                {
-                    FileUtils.copyDirectoryStructure( siteDirectory, siteUserTargetDir );
-
-                    if ( FileUtils.getNbFileCopy(  ) == 0 )
-                    {
-                        getLog(  ).info( "Nothing to copy - all site user files are up to date" );
-                    } else
-                    {
-                        getLog(  ).info( "Copying " + FileUtils.getNbFileCopy(  ) + " site user files" );
-                    }
-
-                    FileUtils.setNbFileCopy( 0 );
-                } else
-                {
-                    // This time only overwrite newer files, since we are sure
-                    // that all files common with the core have either been
-                    // overwritten at webapp creation, or are older
-                    FileUtils.copyDirectoryStructureIfModified( siteDirectory, siteUserTargetDir );
-
-                    if ( FileUtils.getNbFileModified(  ) == 0 )
-                    {
-                        getLog(  ).info( "Nothing to update - all site user files are up to date" );
-                    } else
-                    {
-                        getLog(  ).info( "Copying " + FileUtils.getNbFileModified(  ) + " site user files" );
-                    }
-
-                    FileUtils.setNbFileModified( 0 );
-                }
+                logCopied( copyDirectory( siteDirectory, siteUserTargetDir, isUpdate ), "site user files" );
             }
 
             // Copy compiled classes
@@ -357,23 +271,53 @@ public abstract class AbstractLuteceWebappMojo
             {
                 File classesDir = new File( targetDir, "WEB-INF/classes" );
                 classesDir.mkdirs(  );
-                FileUtils.copyDirectoryStructureIfModified( classesDirectory, classesDir );
-
-                if ( FileUtils.getNbFileModified(  ) == 0 )
-                {
-                    getLog(  ).info( "Nothing to update - all classe and resource files are up to date" );
-                } else
-                {
-                    getLog(  ).info( "Copying " + FileUtils.getNbFileModified(  ) + " classe and resource files" );
-                }
-
-                FileUtils.setNbFileModified( 0 );
+                logCopied( FileUtils.copyDirectoryStructureIfModified( classesDirectory, classesDir ),
+                        "class and resource files" );
             }
         } catch ( IOException e )
         {
             // Use the same catch block for all IOExceptions, presumably the
             // exception's message will be clear enough.
             throw new MojoExecutionException( "Error while copying resources", e );
+        }
+    }
+
+    /**
+     * Copies a directory structure, either wholesale or only the files newer than their target.
+     *
+     * @param sourceDirectory
+     *            the source directory
+     * @param targetDirectory
+     *            the destination directory
+     * @param isUpdate
+     *            true to copy only the modified files
+     * @return the number of files copied
+     * @throws IOException
+     *             if an I/O exception occurs
+     */
+    protected int copyDirectory( File sourceDirectory, File targetDirectory, boolean isUpdate )
+                        throws IOException
+    {
+        return isUpdate ? FileUtils.copyDirectoryStructureIfModified( sourceDirectory, targetDirectory )
+                        : FileUtils.copyDirectoryStructure( sourceDirectory, targetDirectory );
+    }
+
+    /**
+     * Logs how many files a copy actually wrote.
+     *
+     * @param nCopied
+     *            the number of files copied
+     * @param strWhat
+     *            what was copied, for the message
+     */
+    protected void logCopied( int nCopied, String strWhat )
+    {
+        if ( nCopied == 0 )
+        {
+            getLog(  ).info( "Nothing to update - all " + strWhat + " are up to date" );
+        } else
+        {
+            getLog(  ).info( "Copying " + nCopied + " " + strWhat );
         }
     }
 
@@ -535,7 +479,7 @@ public abstract class AbstractLuteceWebappMojo
         if ( ( reactorProjects.size(  ) > 1 ) && ! project.isExecutionRoot(  ) )
         {
             //add dependencies of modules for filter duplicate entry
-            multiProjectArtifacts.addAll( filterArtifacts( thirdPartyFilter ) );
+            getMultiProjectArtifacts(  ).addAll( filterArtifacts( thirdPartyFilter ) );
         } else
         { // no in multi project
 
@@ -619,6 +563,85 @@ public abstract class AbstractLuteceWebappMojo
         {
             throw new MojoExecutionException( "Error while unpacking file " +
                                               webappArtifact.getFile(  ).getAbsolutePath(  ), e );
+        }
+    }
+
+    /**
+     * Gets the jars this project depends on. Lutece artifacts are excluded : they are deployed
+     * by {@link #addToExplodedWebapp(Artifact, File)}. Provided and test artifacts are excluded
+     * too, as are junit and the servlet API, whose transitive scope is not reliable.
+     *
+     * @return the jar files, never null
+     */
+    protected Collection<File> getDependentJars(  )
+    {
+        Set<File> result = new HashSet<>(  );
+        Set<Artifact> directArtifacts = new HashSet<>(  );
+
+        // getDependencyArtifacts() is deprecated and may return null
+        Set<Artifact> dependencyArtifacts = project.getDependencyArtifacts(  );
+
+        if ( dependencyArtifacts != null )
+        {
+            for ( Artifact artifact : dependencyArtifacts )
+            {
+                if ( ! LUTECE_CORE_TYPE.equals( artifact.getType(  ) ) &&
+                         ! LUTECE_PLUGIN_TYPE.equals( artifact.getType(  ) ) &&
+                         ! Artifact.SCOPE_PROVIDED.equals( artifact.getScope(  ) ) &&
+                         ! Artifact.SCOPE_TEST.equals( artifact.getScope(  ) ) )
+                {
+                    directArtifacts.add( artifact );
+                    result.add( artifact.getFile(  ) );
+                }
+            }
+        }
+
+        ArtifactResolutionResult artifactResolutionResult = null;
+
+        try
+        {
+            artifactResolutionResult =
+                resolver.resolveTransitively( directArtifacts,
+                                              project.getArtifact(  ),
+                                              remoteRepositories,
+                                              localRepository,
+                                              metadataSource );
+        } catch ( ArtifactResolutionException | ArtifactNotFoundException e )
+        {
+            getLog(  ).error( e );
+        }
+
+        addTransitiveJars( artifactResolutionResult, result );
+
+        return result;
+    }
+
+    /**
+     * Adds the resolved transitive artifacts to the collected jars.
+     *
+     * @param artifactResolutionResult
+     *            the resolution result, null when the resolution failed and was logged
+     * @param result
+     *            the jars collected so far
+     */
+    void addTransitiveJars( ArtifactResolutionResult artifactResolutionResult, Set<File> result )
+    {
+        if ( artifactResolutionResult == null )
+        {
+            // The resolution failed and has already been logged : keep the direct dependencies
+            // rather than failing with a NullPointerException.
+            return;
+        }
+
+        for ( Artifact artifact : artifactResolutionResult.getArtifacts(  ) )
+        {
+            if ( ! Artifact.SCOPE_PROVIDED.equals( artifact.getScope(  ) ) &&
+                     ! Artifact.SCOPE_TEST.equals( artifact.getScope(  ) ) &&
+                     ! JUNIT.equals( artifact.getArtifactId(  ) ) &&
+                     ! SERVLET_API.equals( artifact.getArtifactId(  ) ) )
+            {
+                result.add( artifact.getFile(  ) );
+            }
         }
     }
 

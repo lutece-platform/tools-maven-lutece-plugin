@@ -190,13 +190,7 @@ public class ExplodedLiteMojo extends AbstractLuteceWebappMojo {
      * @throws IOException if an error occurs during directory copying.
      */
     private void copyDirectoryStructure(File sourceDir, File targetDir, boolean isUpdate) throws IOException {
-        if (!isUpdate) {
-            FileUtils.copyDirectoryStructure(sourceDir, targetDir);
-            logFileCopyStatus();
-        } else {
-            FileUtils.copyDirectoryStructureIfModified(sourceDir, targetDir);
-            logFileModifiedStatus();
-        }
+        logCopied(copyDirectory(sourceDir, targetDir, isUpdate), "files");
     }
 
     /**
@@ -229,31 +223,5 @@ public class ExplodedLiteMojo extends AbstractLuteceWebappMojo {
             File siteUserTargetDir = new File(targetDir, WEB_INF_DOC_XML_PATH);
             copyDirectoryStructure(siteDirectory, siteUserTargetDir, isUpdate);
         }
-    }
-
-    /**
-     * Logs the status of copied files to the console.
-     */
-    private void logFileCopyStatus() {
-        int copiedFiles = FileUtils.getNbFileCopy();
-        if (copiedFiles == 0) {
-            getLog().info("Nothing to copy - all files are up to date.");
-        } else {
-            getLog().info("Copying " + copiedFiles + " files.");
-        }
-        FileUtils.setNbFileCopy(0);
-    }
-
-    /**
-     * Logs the status of modified files to the console.
-     */
-    private void logFileModifiedStatus() {
-        int modifiedFiles = FileUtils.getNbFileModified();
-        if (modifiedFiles == 0) {
-            getLog().info("Nothing to update - all files are up to date.");
-        } else {
-            getLog().info("Copying " + modifiedFiles + " files.");
-        }
-        FileUtils.setNbFileModified(0);
     }
 }

@@ -35,20 +35,12 @@ package fr.paris.lutece.maven;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Arrays;
 
 import javax.inject.Inject;
 
 import org.apache.maven.archiver.MavenArchiveConfiguration;
 import org.apache.maven.archiver.MavenArchiver;
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Execute;
@@ -83,8 +75,6 @@ public class AssemblyMojo
 
     //The path to the classes directory
     private static final String WEB_INF_CLASSES_PATH = "WEB-INF/classes/";
-    private static final String JUNIT = "junit";
-    private static final String SERVLET_API = "servlet-api";
    
     /**
      * The directory containing the site resource files.
@@ -483,108 +473,5 @@ public class AssemblyMojo
                          artifactName + ( ( null != classifier ) ? ( "-" + classifier ) : "" ) +
                          ( timestamp ? ( "-" + dateFormat.format( new Date(  ) ).toString(  ) ) : "" ) + "." +
                          extension );
-    }
-
-    /**
-     * Get the collection of non lutece-core and non lutece-plugin jars.
-     *
-     * @return Collection of jar
-     */
-    @SuppressWarnings( "unchecked" )
-    private Collection<File> getDependentJars(  )
-    {
-        HashSet<File> result = new HashSet<>(  );
-
-        // Direct dependency artifacts of project
-        Set<Artifact> resultArtifact = new HashSet<>(  );
-
-        for ( Object o : project.getDependencyArtifacts(  ) )
-        {
-            Artifact a = null;
-
-            try
-            {
-                a = (Artifact) o;
-            } catch ( ClassCastException e )
-            {
-                getLog(  ).error( e );
-
-                continue;
-            }
-
-            if ( ! LUTECE_CORE_TYPE.equals( a.getType(  ) ) &&
-                     ! LUTECE_PLUGIN_TYPE.equals( a.getType(  ) ) &&
-                     ! Artifact.SCOPE_PROVIDED.equals( a.getScope(  ) ) &&
-                     ! Artifact.SCOPE_TEST.equals( a.getScope(  ) ) )
-            {
-                resultArtifact.add( a );
-                result.add( a.getFile(  ) );
-            }
-        }
-
-        // add the transitive dependency
-        ArtifactResolutionResult artifactResolutionResult = null;
-
-        try
-        {
-            artifactResolutionResult =
-                resolver.resolveTransitively( resultArtifact,
-                                              project.getArtifact(  ),
-                                              remoteRepositories,
-                                              localRepository,
-                                              metadataSource );
-        } catch ( ArtifactResolutionException e )
-        {
-            getLog(  ).error( e );
-        } catch ( ArtifactNotFoundException e )
-        {
-            getLog(  ).error( e );
-        }
-
-        addTransitiveJars( artifactResolutionResult, result );
-
-        return result;
-    }
-
-    /**
-     * Adds the resolved transitive artifacts to the collected jars.
-     *
-     * @param artifactResolutionResult
-     *            the resolution result, null when the resolution failed and was logged
-     * @param result
-     *            the jars collected so far
-     */
-    void addTransitiveJars( ArtifactResolutionResult artifactResolutionResult, Set<File> result )
-    {
-        if ( artifactResolutionResult == null )
-        {
-            // The resolution failed and has already been logged : keep the direct dependencies
-            // rather than failing with a NullPointerException.
-            return;
-        }
-
-        for ( Object o : artifactResolutionResult.getArtifacts(  ) )
-        {
-            Artifact a = null;
-
-            try
-            {
-                a = (Artifact) o;
-            } catch ( ClassCastException e )
-            {
-                getLog(  ).error( e );
-
-                continue;
-            }
-
-            if ( ! Artifact.SCOPE_PROVIDED.equals( a.getScope(  ) ) &&
-                     ! Artifact.SCOPE_TEST.equals( a.getScope(  ) )//for transitively dependencies artifact are not a good scope ( junit and servlet-api )
-                      &&
-                     ! JUNIT.equals( a.getArtifactId(  ) ) &&
-                     ! SERVLET_API.equals( a.getArtifactId(  ) ) )
-            {
-                result.add( a.getFile(  ) );
-            }
-        }
     }
 }

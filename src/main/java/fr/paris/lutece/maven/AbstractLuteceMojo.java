@@ -420,6 +420,14 @@ public abstract class AbstractLuteceMojo
         return formatter.format( date );
     }
 
+    /**
+     * The version of this plugin, so that the banner does not claim a hardcoded one.
+     */
+    @Parameter(
+            defaultValue = "${plugin.version}",
+            readonly = true )
+    protected String pluginVersion;
+
     public void logBanner() {
         getLog().info(" __        __    __   ________  ________  ________  ________");
         getLog().info("   |         |     |          |         |         |         |");
@@ -427,6 +435,6 @@ public abstract class AbstractLuteceMojo
         getLog().info("   |         |     |       |         |      |            |   ");
         getLog().info("   |____     |___  |       |      |_____    |_____    |_____ ");
         getLog().info("        |          |       |            |         |         |");
-        getLog().info("              LUTECE Maven Plugin - Version : 5.0.0            ");
+        getLog().info("              LUTECE Maven Plugin - Version : " + pluginVersion );
     }
 }

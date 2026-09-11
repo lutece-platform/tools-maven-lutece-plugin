@@ -61,7 +61,6 @@ import org.codehaus.plexus.archiver.jar.JarArchiver;
  * <ul>
  *   <li><code>outputDirectory</code>: The directory where the generated WAR file will be placed.</li>
  *   <li><code>finalName</code>: The final name of the WAR file, without extension.</li>
- *   <li><code>webResources</code>: Resources to be included in the WAR.</li>
  *   <li><code>includeDependencies</code>: Whether to include project dependencies in the WAR file.</li>
  *   <li><code>localConfDirectory</code>: The directory containing the local, user-specific configuration files.</li>
  *   <li><code>defaultConfDirectory</code>: The directory containing the default configuration files.</li>

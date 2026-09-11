@@ -152,20 +152,7 @@ public abstract class AbstractLuteceWebappMojo
      */
     @Parameter(property = "targetDatabaseVendor", defaultValue = DATABASE_VENDOR_NONE)
     protected String targetDatabaseVendor;
-   
-    /**
-    * The outdatedCheckPath
-    */
-    @Parameter(
-            defaultValue = "WEB-INF/lib/")
-    private String outdatedCheckPath;
 
-    /**
-     * The list of webResources we want to transfer.
-     */
-    @Parameter
-    private Resource[] webResources;
-  
 
     /**
      * The artifact factory.
@@ -716,23 +703,11 @@ public abstract class AbstractLuteceWebappMojo
     {
         Set<Artifact> artifactSet = filterArtifacts( a -> ARTIFACT_BUILD_CONFIG.contentEquals( a.getArtifactId( ) ) );
 
-        if ( artifactSet.isEmpty(  ) )
-        {
-            // build-config is inherited from lutece-global-pom, never declared by the project
-            // itself. A project built outside the Lutece stack (LUT-32095) simply does not get
-            // the ant build scripts, which is no reason to fail its build.
-            getLog(  ).warn( "No " + ARTIFACT_BUILD_CONFIG +
-                             " dependency : the SQL build scripts will not be deployed" );
-
-            return;
-        }
-
-        if ( artifactSet.size(  ) > 1 )
+        if ( artifactSet == null || artifactSet.isEmpty(  ) || artifactSet.size(  ) > 1 )
         {
             throw new MojoExecutionException( "Project \"" + project.getName(  ) +
-                                              "\" must have at most one dependency named " + ARTIFACT_BUILD_CONFIG );
+                                              "\" must have exactly one dependency named " + ARTIFACT_BUILD_CONFIG );
         }
-
         Artifact buildConfig = artifactSet.iterator( ).next( );
 
         Path sqlDir = Paths.get( targetDir.getAbsolutePath( ), WEB_INF_SQL_PATH );
@@ -941,7 +916,7 @@ public abstract class AbstractLuteceWebappMojo
             {
                 liquibasePropertiesFile.delete();
             }
-               getLog().info("Generating file " +  explodedDirectory +META_INF_DIRECTORY + LiquiBaseSqlMojo.MICROPROFILE_CONFIG_PROPERTIES_FILE );
+               getLog().info("Generating file " + liquibasePropertiesFile.getAbsolutePath());
                 StringBuilder sb = new StringBuilder();
                 sb.append("# Generated file - do not edit\n");
                 sb.append("liquibase.readyToRun="+listLiquibaseFileErrors.isEmpty()+"\n");

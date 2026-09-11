@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-configuration2</artifactId>
-      <version>2.10.1</version>
+      <version>2.15.1</version>
     </dependency>
     <!-- A Lutece plugin dependency. Neither it nor the artifacts it drags in - lutece-core,
          liquibase-core, library-sql-utils - belong in this plugin's own bin zip : they are

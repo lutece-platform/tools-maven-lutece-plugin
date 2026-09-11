@@ -87,27 +87,7 @@ class SharedArtifactsTest
     }
 
     @Test
-    @DisplayName( "the highest version wins, whatever the order the modules came in" )
-    void theHighestVersionWins( )
-    {
-        Artifact older = artifact( "library", "3.14.0" );
-        Artifact newer = artifact( "library", "3.17.0" );
-        Artifact other = artifact( "other", "1.0" );
-
-        // The order modules run in must not decide which jar the shared webapp ships.
-        for ( List<Artifact> order : List.of( List.of( older, newer, other ), List.of( newer, older, other ),
-                List.of( other, newer, older ) ) )
-        {
-            Set<Artifact> kept = AbstractLuteceMojo.keepHighestVersions( order );
-
-            assertEquals( 2, kept.size( ), "one artifact per groupId:artifactId" );
-            assertTrue( kept.contains( newer ), "the highest version must win, got " + kept );
-            assertFalse( kept.contains( older ), "the older version must be dropped, got " + kept );
-        }
-    }
-
-    @Test
-    @DisplayName( "versions compare without needing a version range" )
+    @DisplayName( "versions compare without needing a version range, and order the arbitration" )
     void versionsCompareWithoutAVersionRange( )
     {
         // getSelectedVersion() throws on an artifact that carries no range, which is how
@@ -115,6 +95,10 @@ class SharedArtifactsTest
         Artifact noRange = new DefaultArtifact( "fr.paris.lutece", "library", "2.0", Artifact.SCOPE_COMPILE,
                 "jar", null, new DefaultArtifactHandler( "jar" ) );
 
+        // deployThirdPartyJar keeps the jar whose version compares highest, so this is the
+        // rule that decides what a reactor ships when two modules disagree.
+        assertTrue( AbstractLuteceMojo.compareVersions( artifact( "library", "3.17.0" ),
+                artifact( "library", "3.14.0" ) ) > 0, "3.17.0 must win over 3.14.0" );
         assertTrue( AbstractLuteceMojo.compareVersions( noRange, artifact( "library", "1.0" ) ) > 0 );
         assertTrue( AbstractLuteceMojo.compareVersions( artifact( "library", "1.0" ), noRange ) < 0 );
         assertEquals( 0, AbstractLuteceMojo.compareVersions( artifact( "library", "1.0" ),

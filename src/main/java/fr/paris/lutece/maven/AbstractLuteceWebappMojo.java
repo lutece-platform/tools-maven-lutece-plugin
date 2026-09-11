@@ -183,6 +183,12 @@ public abstract class AbstractLuteceWebappMojo
     @Inject
     protected ArtifactMetadataSource metadataSource;
 
+    /** Third-party jars a webapp ships : plain jars in scope compile or runtime. */
+    private static final ArtifactFilter THIRD_PARTY_FILTER = artifact ->
+            "jar".equals( artifact.getType(  ) ) &&
+            ( Artifact.SCOPE_RUNTIME.equals( artifact.getScope(  ) ) ||
+              Artifact.SCOPE_COMPILE.equals( artifact.getScope(  ) ) );
+
     /**
      * Creates an exploded webapp structure from the current project.
      *
@@ -448,47 +454,126 @@ public abstract class AbstractLuteceWebappMojo
         File webinfLib = new File( webappDir, "WEB-INF/lib" );
         webinfLib.mkdirs(  );
 
-        // Filter jar artifacts in scope 'compile' or 'runtime'
-        ArtifactFilter thirdPartyFilter =
-            new ArtifactFilter(  )
-            {
-                @Override
-                public boolean include( Artifact artifact )
-                {
-                    return ( "jar".equals( artifact.getType(  ) ) &&
-                           (
-                               Artifact.SCOPE_RUNTIME.equals( artifact.getScope(  ) ) ||
-                               Artifact.SCOPE_COMPILE.equals( artifact.getScope(  ) )
-                            ) );
-                }
-            };
-
-        // if multi project
-        if ( ( reactorProjects.size(  ) > 1 ) && ! project.isExecutionRoot(  ) )
+        // One code path whatever the build topology, the way liberty-maven-plugin does it :
+        // walk the artifacts Maven resolved for this project and deploy them. It used to
+        // branch on "am I in a reactor ?" and, there, gather the artifacts into a shared set
+        // to resolve them all over again later - a second resolution answering a question
+        // Maven had already answered per module.
+        //
+        // A reactor only differs in that every module writes into the same WEB-INF/lib. A
+        // library two modules ask in different versions still has to be arbitrated, and the
+        // registry below is what makes that happen; on a single project nothing ever collides
+        // and the loop simply copies.
+        for ( Artifact artifact : filterArtifacts( THIRD_PARTY_FILTER ) )
         {
-            //add dependencies of modules for filter duplicate entry
-            getMultiProjectArtifacts(  ).addAll( filterArtifacts( thirdPartyFilter ) );
-        } else
-        { // no in multi project
+            deployThirdPartyJar( artifact, webinfLib );
+        }
+    }
 
-            Set thirdPartyJARs = filterArtifacts( thirdPartyFilter );
+    /**
+     * Deploys a third-party jar to WEB-INF/lib, keeping a single version of each library.
+     *
+     * @param artifact
+     *            the artifact to deploy
+     * @param webinfLib
+     *            the WEB-INF/lib directory
+     * @throws MojoExecutionException
+     *             if the jar cannot be copied or the superseded one removed
+     */
+    private void deployThirdPartyJar( Artifact artifact, File webinfLib )
+                               throws MojoExecutionException
+    {
+        Set<Artifact> deployed = getDeployedJars(  );
 
-            for ( Iterator iterJARs = thirdPartyJARs.iterator(  ); iterJARs.hasNext(  ); )
+        synchronized ( deployed )
+        {
+            Artifact previous = findSameLibrary( deployed, artifact );
+
+            if ( previous != null )
             {
-                Artifact artifact = (Artifact) iterJARs.next(  );
-                File jarFile = artifact.getFile(  );
-                File newFile = new File( webinfLib,
-                                         jarFile.getName(  ) );
-
-                try
+                if ( compareVersions( artifact, previous ) <= 0 )
                 {
-                    FileUtils.copyFileIfModified( jarFile, newFile );
-                } catch ( IOException e )
-                {
-                    throw new MojoExecutionException( "Error while copying " + jarFile.getAbsolutePath(  ) + " to " +
-                                                      newFile.getAbsolutePath(  ), e );
+                    // The same library is already there in that version or a newer one.
+                    return;
                 }
+
+                deleteJar( previous, webinfLib );
+                deployed.remove( previous );
             }
+
+            copyJar( artifact, webinfLib );
+            deployed.add( artifact );
+        }
+    }
+
+    /**
+     * Finds an already deployed artifact with the same groupId and artifactId.
+     *
+     * @param deployed
+     *            the artifacts deployed so far
+     * @param artifact
+     *            the artifact being deployed
+     * @return the one already deployed, or null
+     */
+    private static Artifact findSameLibrary( Collection<Artifact> deployed, Artifact artifact )
+    {
+        for ( Artifact candidate : deployed )
+        {
+            if ( candidate.getGroupId(  ).equals( artifact.getGroupId(  ) ) &&
+                     candidate.getArtifactId(  ).equals( artifact.getArtifactId(  ) ) )
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Copies an artifact's jar to WEB-INF/lib.
+     *
+     * @param artifact
+     *            the artifact to copy
+     * @param webinfLib
+     *            the WEB-INF/lib directory
+     * @throws MojoExecutionException
+     *             if the copy fails
+     */
+    private void copyJar( Artifact artifact, File webinfLib )
+                  throws MojoExecutionException
+    {
+        File jarFile = artifact.getFile(  );
+        File newFile = new File( webinfLib,
+                                 jarFile.getName(  ) );
+
+        try
+        {
+            FileUtils.copyFileIfModified( jarFile, newFile );
+        } catch ( IOException e )
+        {
+            throw new MojoExecutionException( "Error while copying " + jarFile.getAbsolutePath(  ) + " to " +
+                                              newFile.getAbsolutePath(  ), e );
+        }
+    }
+
+    /**
+     * Removes a jar superseded by a newer version of the same library.
+     *
+     * @param artifact
+     *            the superseded artifact
+     * @param webinfLib
+     *            the WEB-INF/lib directory
+     * @throws MojoExecutionException
+     *             if the jar cannot be removed
+     */
+    private void deleteJar( Artifact artifact, File webinfLib )
+                    throws MojoExecutionException
+    {
+        File jarFile = new File( webinfLib, artifact.getFile(  ).getName(  ) );
+
+        if ( jarFile.exists(  ) && ! jarFile.delete(  ) )
+        {
+            throw new MojoExecutionException( "Error while removing " + jarFile.getAbsolutePath(  ) );
         }
     }
 

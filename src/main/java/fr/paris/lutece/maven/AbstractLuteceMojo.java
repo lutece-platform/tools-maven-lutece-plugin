@@ -44,28 +44,22 @@ import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.logging.LogEnabled;
 import org.eclipse.aether.SessionData;
-import org.codehaus.plexus.logging.Logger;
 
 /**
  * Abstracts functionnality common to all Lutece mojos.
  */
 public abstract class AbstractLuteceMojo
     extends AbstractMojo
-    implements LogEnabled
 {
     /**
      * The name of the lutece plugin artifact type.
@@ -317,22 +311,9 @@ public abstract class AbstractLuteceMojo
             readonly = true)
     protected List<MavenProject> reactorProjects;
 
-    /**
-    * Artifact collector, needed to resolve dependencies.
-    *
-    * @component
-    */
-    @Component
-    protected ArtifactCollector artifactCollector;
-
-    /**
-     * Keys under which the multi-project artifact sets are shared between the modules of a
-     * reactor build.
-     */
-    private static final String MULTI_PROJECT_ARTIFACTS_KEY =
-        AbstractLuteceMojo.class.getName(  ) + ".multiProjectArtifacts";
-    private static final String MULTI_PROJECT_ARTIFACTS_COPIED_KEY =
-        AbstractLuteceMojo.class.getName(  ) + ".multiProjectArtifactsCopied";
+    /** Key under which the deployed jars are recorded, shared by the modules of a build. */
+    private static final String DEPLOYED_JARS_KEY =
+        AbstractLuteceMojo.class.getName(  ) + ".deployedJars";
 
     /** Key of the counter of modules that have exploded into the shared webapp. */
     private static final String EXPLODED_MODULES_KEY =
@@ -341,20 +322,6 @@ public abstract class AbstractLuteceMojo
     /** Key prefix of the locks guarding the directories the modules share. */
     private static final String SHARED_DIRECTORY_LOCK_KEY =
         AbstractLuteceMojo.class.getName(  ) + ".sharedDirectoryLock:";
-
-    /**
-    * Plexus logger needed for debugging manual artifact resolution.
-    */
-    protected Logger logger;
-
-    /**
-     * @see org.codehaus.plexus.logging.LogEnabled#enableLogging(org.codehaus.plexus.logging.Logger)
-     */
-    @Override
-    public void enableLogging( Logger logger )
-    {
-        this.logger = logger;
-    }
 
     protected void validatePackaging( String... allowedPackagings )
                               throws MojoExecutionException
@@ -372,24 +339,15 @@ public abstract class AbstractLuteceMojo
     }
 
     /**
-     * The set of artifacts required by the multi project, including transitive dependencies.
-     * Every module of the reactor contributes to it.
+     * The jars already deployed to WEB-INF/lib, so that a library asked by several modules of
+     * a reactor is shipped once, in its highest version. On a single project nothing ever
+     * collides and this is only a record of what was copied.
      *
      * @return the shared set, never null
      */
-    protected Set<Artifact> getMultiProjectArtifacts(  )
+    protected Set<Artifact> getDeployedJars(  )
     {
-        return getSharedArtifacts( session.getRepositorySession(  ).getData(  ), MULTI_PROJECT_ARTIFACTS_KEY );
-    }
-
-    /**
-     * The multi project artifacts already copied to the shared WEB-INF/lib.
-     *
-     * @return the shared set, never null
-     */
-    protected Set<Artifact> getMultiProjectArtifactsCopied(  )
-    {
-        return getSharedArtifacts( session.getRepositorySession(  ).getData(  ), MULTI_PROJECT_ARTIFACTS_COPIED_KEY );
+        return getSharedArtifacts( session.getRepositorySession(  ).getData(  ), DEPLOYED_JARS_KEY );
     }
 
     /**
@@ -410,38 +368,6 @@ public abstract class AbstractLuteceMojo
     {
         return (Set<Artifact>) data.computeIfAbsent( strKey,
                 (  ) -> Collections.synchronizedSet( new LinkedHashSet<Artifact>(  ) ) );
-    }
-
-    /**
-     * Keeps a single version of each artifact : the highest one.
-     *
-     * Every module of a reactor resolves its own dependencies first, honouring the
-     * dependencyManagement it inherits, so the versions reaching this point already are the
-     * ones the poms impose. What is left to arbitrate is a genuine divergence between two
-     * modules, and the shared webapp can hold only one jar per library. Picking the highest
-     * version is a rule; relying on the order the modules happen to run in is not one, and it
-     * made a parallel build ship a different jar from one run to the next.
-     *
-     * @param artifactsToReduce
-     *            the artifacts gathered from every module
-     * @return one artifact per groupId:artifactId, in a stable order
-     */
-    static Set<Artifact> keepHighestVersions( Collection<Artifact> artifactsToReduce )
-    {
-        Map<String, Artifact> highestByKey = new TreeMap<>(  );
-
-        for ( Artifact artifact : artifactsToReduce )
-        {
-            String strKey = artifact.getGroupId(  ) + ":" + artifact.getArtifactId(  );
-            Artifact highest = highestByKey.get( strKey );
-
-            if ( ( highest == null ) || ( compareVersions( artifact, highest ) > 0 ) )
-            {
-                highestByKey.put( strKey, artifact );
-            }
-        }
-
-        return new LinkedHashSet<>( highestByKey.values(  ) );
     }
 
     /**

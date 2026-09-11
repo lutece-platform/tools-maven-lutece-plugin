@@ -129,14 +129,4 @@ class AssemblyMojosTest
 
         assertEquals( 1, jars.size( ), "the direct dependencies must be kept" );
     }
-
-    @Test
-    @DisplayName( "a failed artifact collection yields no dependency instead of throwing" )
-    void explodedMojoSurvivesFailedCollection( )
-    {
-        ExplodedMojo mojo = new ExplodedMojo( );
-
-        assertTrue( mojo.collectResolvedArtifacts( null ).isEmpty( ),
-                "a failed collection must yield an empty set" );
-    }
 }

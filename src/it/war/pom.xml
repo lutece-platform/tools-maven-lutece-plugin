@@ -1,0 +1,42 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.paris.lutece.it</groupId>
+  <artifactId>war</artifactId>
+  <version>1.0</version>
+  <packaging>lutece-plugin</packaging>
+
+  <description>
+    The war goal explodes the webapp then archives it. Checks the archive really holds the
+    webapp, the third-party jars, the default configuration and the Liquibase classpath.
+  </description>
+
+  <repositories>
+    <repository>
+      <id>lutece</id>
+      <url>https://dev.lutece.paris.fr/maven_repository</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>fr.paris.lutece.tools</groupId>
+      <artifactId>build-config</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.15.1</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>fr.paris.lutece.tools</groupId>
+        <artifactId>lutece-maven-plugin</artifactId>
+        <version>@project.version@</version>
+      </extension>
+    </extensions>
+  </build>
+</project>

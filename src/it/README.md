@@ -14,6 +14,9 @@ They are behind the `run-its` profile because they need network access: the proj
 | `liquibase-sql-reactor` | `liquibase-sql` on a module of a reactor, where the working directory is the root and not the module |
 | `multi-module` | one shared webapp per reactor: merged descriptors, pooled jars, arbitrated version conflict |
 | `exploded-webapp` | which SQL files reach `WEB-INF/classes/sql`, and the report on a misnamed upgrade script |
+| `exploded-lite` | the lite variant deploys the webapp and the SQL but ships no jar and no compiled class |
+| `war` | the archive really holds the webapp, the default configuration, the SQL and the third-party jars |
+| `site-assembly` | a `lutece-site` war, and the UTC timestamp substituted for the SNAPSHOT marker |
 
 `verify.groovy` receives `basedir` (the cloned project) and can read `build.log` to assert on
 the build output.

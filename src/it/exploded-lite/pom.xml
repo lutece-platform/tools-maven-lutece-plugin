@@ -1,0 +1,44 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.paris.lutece.it</groupId>
+  <artifactId>exploded-lite</artifactId>
+  <version>1.0</version>
+  <packaging>lutece-plugin</packaging>
+
+  <description>
+    exploded-lite unpacks the webapp structure without the compiled classes and without the
+    jars. Checks that the webapp and the SQL are there and that WEB-INF/lib stays empty,
+    which is the whole point of the "lite" variant.
+  </description>
+
+  <repositories>
+    <repository>
+      <id>lutece</id>
+      <url>https://dev.lutece.paris.fr/maven_repository</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>fr.paris.lutece.tools</groupId>
+      <artifactId>build-config</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+    <!-- a plain jar : exploded-lite must NOT ship it -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.15.1</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>fr.paris.lutece.tools</groupId>
+        <artifactId>lutece-maven-plugin</artifactId>
+        <version>@project.version@</version>
+      </extension>
+    </extensions>
+  </build>
+</project>

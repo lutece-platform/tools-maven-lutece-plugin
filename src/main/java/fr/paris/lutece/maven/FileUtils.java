@@ -35,11 +35,11 @@ package fr.paris.lutece.maven;
 
 import org.codehaus.plexus.util.IOUtil;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +47,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Utility class to manipulate files.<br>
@@ -332,13 +331,66 @@ public class FileUtils
     public static void copyFileWithLineFilter(Path sourceFile, Path destinationFile, Function<String, String> linefilter) throws IOException
     {
         if (linefilter == null)
+        {
             Files.copy(sourceFile, destinationFile, StandardCopyOption.REPLACE_EXISTING);
-        else
-            try (Stream<String> lines = Files.lines(sourceFile); BufferedWriter writer = Files.newBufferedWriter(destinationFile))
+
+            return;
+        }
+
+        // ISO-8859-1 maps every byte to exactly one char and back, so the file goes through
+        // unchanged whatever charset it really uses. Reading it as UTF-8 made a legacy SQL
+        // script written in another charset fail the build with a MalformedInputException,
+        // while the very same file copied fine when no filter was configured. The filter rules
+        // shipped by build-config are pure ASCII, so they match all the same.
+        String strContent = new String( Files.readAllBytes( sourceFile ), StandardCharsets.ISO_8859_1 );
+
+        Files.write( destinationFile,
+                     filterLines( strContent, linefilter ).getBytes( StandardCharsets.ISO_8859_1 ) );
+    }
+
+    /**
+     * Applies the filter to every line, keeping each line terminator exactly as it was, and
+     * adding none to a last line that had none.
+     *
+     * Appending a "\n" after every line turned a CRLF file into an LF one and grew the file by
+     * one byte, so the copy no longer matched the source it was taken from.
+     *
+     * @param strContent
+     *            the whole file content
+     * @param linefilter
+     *            the filter to apply to each line, terminator excluded
+     * @return the filtered content
+     */
+    static String filterLines( String strContent, Function<String, String> linefilter )
+    {
+        StringBuilder result = new StringBuilder( strContent.length(  ) );
+        int nStart = 0;
+
+        while ( nStart < strContent.length(  ) )
+        {
+            int nEnd = nStart;
+
+            while ( nEnd < strContent.length(  ) && strContent.charAt( nEnd ) != '\n' &&
+                    strContent.charAt( nEnd ) != '\r' )
             {
-                for (String line : (Iterable<String>) lines::iterator)// avoid a clumsy loop with try/catch
-                    writer.append(linefilter.apply(line)).append('\n');
+                nEnd++;
             }
+
+            result.append( linefilter.apply( strContent.substring( nStart, nEnd ) ) );
+
+            if ( nEnd < strContent.length(  ) )
+            {
+                boolean bCrLf = ( strContent.charAt( nEnd ) == '\r' ) && ( nEnd + 1 < strContent.length(  ) ) &&
+                                ( strContent.charAt( nEnd + 1 ) == '\n' );
+
+                result.append( bCrLf ? "\r\n" : String.valueOf( strContent.charAt( nEnd ) ) );
+                nEnd += bCrLf ? 2 : 1;
+            }
+
+            nStart = nEnd;
+        }
+
+        return result.toString(  );
     }
 
     /**

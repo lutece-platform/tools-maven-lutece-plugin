@@ -675,19 +675,7 @@ public abstract class AbstractLuteceWebappMojo
      */
     protected File getRootProjectBuildDirectory(  )
     {
-        MavenProject mp = null;
-
-        for ( Object o : reactorProjects )
-        {
-            mp = (MavenProject) o;
-
-            if ( mp.isExecutionRoot(  ) )
-            {
-                break;
-            }
-        }
-
-        return new File( mp.getBuild(  ).getDirectory(  ) + File.separatorChar + LUTECE_DIRECTORY );
+        return new File( getRootProjectBuildDirectoryTarget(  ), LUTECE_DIRECTORY );
     }
 
     /**
@@ -697,30 +685,54 @@ public abstract class AbstractLuteceWebappMojo
      */
     protected File getRootProjectBuildDirectoryTarget(  )
     {
-        MavenProject mp = null;
+        return new File( getRootProject(  ).getBuild(  ).getDirectory(  ) );
+    }
 
-        for ( Object o : reactorProjects )
+    /**
+     * Returns the project the reactor was started from.
+     *
+     * The previous version walked the reactor and kept whatever project came last when no
+     * execution root was found, and dereferenced null on an empty reactor.
+     *
+     * @return the execution root, or the current project when the reactor declares none
+     */
+    private MavenProject getRootProject(  )
+    {
+        if ( reactorProjects != null )
         {
-            mp = (MavenProject) o;
-
-            if ( mp.isExecutionRoot(  ) )
+            for ( MavenProject reactorProject : reactorProjects )
             {
-                break;
+                if ( reactorProject.isExecutionRoot(  ) )
+                {
+                    return reactorProject;
+                }
             }
         }
 
-        return new File( mp.getBuild(  ).getDirectory(  ) );
+        return project;
     }
 
     protected void copyBuildConfig( File targetDir ) throws MojoExecutionException
     {
         Set<Artifact> artifactSet = filterArtifacts( a -> ARTIFACT_BUILD_CONFIG.contentEquals( a.getArtifactId( ) ) );
 
-        if ( artifactSet == null || artifactSet.isEmpty(  ) || artifactSet.size(  ) > 1 )
+        if ( artifactSet.isEmpty(  ) )
+        {
+            // build-config is inherited from lutece-global-pom, never declared by the project
+            // itself. A project built outside the Lutece stack (LUT-32095) simply does not get
+            // the ant build scripts, which is no reason to fail its build.
+            getLog(  ).warn( "No " + ARTIFACT_BUILD_CONFIG +
+                             " dependency : the SQL build scripts will not be deployed" );
+
+            return;
+        }
+
+        if ( artifactSet.size(  ) > 1 )
         {
             throw new MojoExecutionException( "Project \"" + project.getName(  ) +
-                                              "\" must have exactly one dependency named " + ARTIFACT_BUILD_CONFIG );
+                                              "\" must have at most one dependency named " + ARTIFACT_BUILD_CONFIG );
         }
+
         Artifact buildConfig = artifactSet.iterator( ).next( );
 
         Path sqlDir = Paths.get( targetDir.getAbsolutePath( ), WEB_INF_SQL_PATH );
@@ -788,6 +800,13 @@ public abstract class AbstractLuteceWebappMojo
             List<String> listUnrecognizedUpgradeFiles = new ArrayList<>();
             final File lq_sqlSourceDir = new File(explodedDirectory, WEB_INF_SQL_PATH);
             final File lq_sqlTargetDir = new File(explodedDirectory, WEB_INF_CLASSES_SQL_PATH);
+
+            if (!lq_sqlSourceDir.isDirectory())
+            {
+                getLog().info("No " + WEB_INF_SQL_PATH + " directory : no SQL file to process");
+
+                return;
+            }
             // we allow explicit override of build.properties location with this system property
             File dbProperties = new File(explodedDirectory, WEB_INF_DB_PROPERTIES_PATH);
             File buildProperties = new File(explodedDirectory, WEB_INF_BUILD_PROPERTIES_PATH);

@@ -1,5 +1,6 @@
 package fr.paris.lutece.maven;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -117,6 +118,60 @@ class FileUtilsTest
         assertFalse( new File( destination, "resources/images/logo.png" ).exists( ), "site images must be skipped" );
         assertFalse( new File( destination, "tech/notes.txt" ).exists( ), "the tech directory must be skipped" );
         assertFalse( new File( destination, "site/site.xml" ).exists( ), "site.xml must be skipped" );
+    }
+
+    @Test
+    @DisplayName( "the line filter keeps every terminator, and adds none at the end" )
+    void lineFilterKeepsTerminators( ) throws IOException
+    {
+        Path source = tempDir.resolve( "src.sql" );
+        // CRLF, and no terminator on the last line
+        Files.write( source, "SELECT 1;\r\nSELECT 2;".getBytes( StandardCharsets.ISO_8859_1 ) );
+
+        Path target = tempDir.resolve( "out.sql" );
+        FileUtils.copyFileWithLineFilter( source, target, line -> line );
+
+        assertArrayEquals( Files.readAllBytes( source ), Files.readAllBytes( target ),
+                "an identity filter must leave the file byte for byte identical" );
+    }
+
+    @Test
+    @DisplayName( "the line filter carries bytes that are not UTF-8 through untouched" )
+    void lineFilterCarriesNonUtf8BytesThrough( ) throws IOException
+    {
+        Path source = tempDir.resolve( "latin.sql" );
+        // a legacy script in ISO-8859-1 : reading it as UTF-8 used to fail the build
+        Files.write( source, "INSERT INTO t VALUES ('Cree');".replace( "ee", "\u00e9\u00e9" )
+                .getBytes( StandardCharsets.ISO_8859_1 ) );
+
+        Path target = tempDir.resolve( "out.sql" );
+        FileUtils.copyFileWithLineFilter( source, target, line -> line );
+
+        assertArrayEquals( Files.readAllBytes( source ), Files.readAllBytes( target ) );
+    }
+
+    @Test
+    @DisplayName( "the line filter still rewrites what it is asked to" )
+    void lineFilterStillRewritesLines( ) throws IOException
+    {
+        Path source = tempDir.resolve( "src.sql" );
+        Files.write( source, "MEDIUMTEXT a;\nMEDIUMTEXT b;\n".getBytes( StandardCharsets.ISO_8859_1 ) );
+
+        Path target = tempDir.resolve( "out.sql" );
+        FileUtils.copyFileWithLineFilter( source, target, line -> line.replace( "MEDIUMTEXT", "TEXT" ) );
+
+        assertEquals( "TEXT a;\nTEXT b;\n",
+                new String( Files.readAllBytes( target ), StandardCharsets.ISO_8859_1 ) );
+    }
+
+    @Test
+    @DisplayName( "filterLines handles the empty file and bare terminators" )
+    void filterLinesHandlesEdgeCases( )
+    {
+        assertEquals( "", FileUtils.filterLines( "", line -> line ) );
+        assertEquals( "\n\n", FileUtils.filterLines( "\n\n", line -> line ) );
+        assertEquals( "\r\n\r", FileUtils.filterLines( "\r\n\r", line -> line ) );
+        assertEquals( "a", FileUtils.filterLines( "a", line -> line ) );
     }
 
     @Test

@@ -1,0 +1,33 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.paris.lutece.it</groupId>
+  <artifactId>liquibase-sql-reactor</artifactId>
+  <version>1.0</version>
+  <packaging>pom</packaging>
+
+  <description>
+    Runs liquibase-sql on a module of a reactor. Maven's working directory is then the reactor
+    root, not the module, which used to make the goal fail on ./webapp/WEB-INF/plugins.
+  </description>
+
+  <modules>
+    <module>plug</module>
+  </modules>
+
+  <repositories>
+    <repository>
+      <id>lutece</id>
+      <url>https://dev.lutece.paris.fr/maven_repository</url>
+    </repository>
+  </repositories>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>fr.paris.lutece.tools</groupId>
+        <artifactId>lutece-maven-plugin</artifactId>
+        <version>@project.version@</version>
+      </extension>
+    </extensions>
+  </build>
+</project>

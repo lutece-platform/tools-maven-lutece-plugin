@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.paris.lutece.it</groupId>
+  <artifactId>multi-module</artifactId>
+  <version>1.0</version>
+  <packaging>pom</packaging>
+
+  <description>
+    Two lutece-plugin modules sharing one target/lutece webapp. Checks that the third-party
+    jars are pooled there and that a dependency requested in two different versions ends up
+    only once. This is the reactor path, which no unit test can reach.
+  </description>
+
+  <modules>
+    <module>modA</module>
+    <module>modB</module>
+  </modules>
+
+  <repositories>
+    <repository>
+      <id>lutece</id>
+      <url>https://dev.lutece.paris.fr/maven_repository</url>
+    </repository>
+  </repositories>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>fr.paris.lutece.tools</groupId>
+        <artifactId>lutece-maven-plugin</artifactId>
+        <version>@project.version@</version>
+      </extension>
+    </extensions>
+  </build>
+</project>

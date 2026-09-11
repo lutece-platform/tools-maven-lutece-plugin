@@ -234,6 +234,44 @@
         </site>
     </distributionManagement>-->
 
+    <profiles>
+        <!--
+            Integration tests : each project under src/it is built with the plugin freshly
+            installed, then checked by its verify.groovy. They exercise what a unit test cannot
+            reach - the multi-module reactor and the goals end to end.
+
+            Run with : mvn verify -Prun-its
+        -->
+        <profile>
+            <id>run-its</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <version>3.9.0</version>
+                        <configuration>
+                            <projectsDirectory>src/it</projectsDirectory>
+                            <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+                            <cloneClean>true</cloneClean>
+                            <postBuildHookScript>verify</postBuildHookScript>
+                            <streamLogs>false</streamLogs>
+                            <showErrors>true</showErrors>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>integration-test</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -1,0 +1,1 @@
+ALTER TABLE plug_item ADD COLUMN label VARCHAR(50);

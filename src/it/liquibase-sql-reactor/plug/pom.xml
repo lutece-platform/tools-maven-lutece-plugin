@@ -1,0 +1,10 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>fr.paris.lutece.it</groupId>
+    <artifactId>liquibase-sql-reactor</artifactId>
+    <version>1.0</version>
+  </parent>
+  <artifactId>plug</artifactId>
+  <packaging>lutece-plugin</packaging>
+</project>

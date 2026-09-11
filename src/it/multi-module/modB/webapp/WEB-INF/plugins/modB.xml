@@ -2,5 +2,5 @@
 <plug-in>
     <name>modB</name>
     <version>1.0.0</version>
-    <db-pool-required>0</db-pool-required>
+    <db-pool-required>1</db-pool-required>
 </plug-in>

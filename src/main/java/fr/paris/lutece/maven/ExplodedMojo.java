@@ -106,10 +106,6 @@ public class ExplodedMojo
             getLog(  ).info( "   explode local configuration, copy dependencies" );
             getLog(  ).info( "------------------------------------------------------------------------" );
 
-            // generate plugins.dat
-            getLog(  ).info( "Generate plugins.dat file" );
-            PluginDataService.generatePluginsDataFile( testWebappDirectory.getAbsolutePath(  ) );
-
             explodeMultiProjectUserConfigurationFiles( getRootProjectBuildDirectory(  ), localConfDirectory );
         } else
         {
@@ -144,7 +140,28 @@ public class ExplodedMojo
             explodeWebapp( testWebappDirectory );
             explodeConfigurationFiles( testWebappDirectory );
             explodeSqlFiles(testWebappDirectory, targetDatabaseVendor);
+
+            if ( ( reactorProjects.size(  ) > 1 ) && isLastProjectOfReactor(  ) )
+            {
+                // Every module has now deployed its descriptor into the shared webapp, so the
+                // file can list them. It used to be generated from the root POM branch, and
+                // Maven builds the root first : WEB-INF/plugins was still empty and the file
+                // declared no plugin at all.
+                getLog(  ).info( "Generate plugins.dat file" );
+                PluginDataService.generatePluginsDataFile( testWebappDirectory.getAbsolutePath(  ) );
+            }
         }
+    }
+
+    /**
+     * Tells whether the current project is the last one the reactor builds.
+     *
+     * @return true when no other module will explode into the shared webapp after this one
+     */
+    private boolean isLastProjectOfReactor(  )
+    {
+        return ! reactorProjects.isEmpty(  ) &&
+               reactorProjects.get( reactorProjects.size(  ) - 1 ).equals( project );
     }
 
     /**

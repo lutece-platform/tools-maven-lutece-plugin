@@ -6,19 +6,19 @@ assert shared.isDirectory() : "no shared webapp in ${shared}"
 assert new File( shared, 'WEB-INF/plugins/modA.xml' ).isFile() : "modA did not contribute its descriptor"
 assert new File( shared, 'WEB-INF/plugins/modB.xml' ).isFile() : "modB did not contribute its descriptor"
 
-// plugins.dat is generated, but see the note below : it is currently empty.
+// plugins.dat is generated once the last module has exploded, so it lists every plugin the
+// shared webapp holds. Generating it from the root POM, which Maven builds first, used to
+// produce a file declaring no plugin at all.
 File pluginsDat = new File( shared, 'WEB-INF/plugins/plugins.dat' )
 assert pluginsDat.isFile() : "plugins.dat was not generated"
+String dat = pluginsDat.text
+assert dat.contains( 'modA.installed=1' ) : "modA missing from plugins.dat :\n${dat}"
+assert dat.contains( 'modB.installed=1' ) : "modB missing from plugins.dat :\n${dat}"
 
-// KNOWN BUG, not asserted on purpose so that this IT stays green.
-// ExplodedMojo generates plugins.dat from the root POM branch, and Maven builds the root
-// first : the descriptors the modules deploy are not there yet, so the file lists no plugin
-// at all and the webapp starts with every plugin disabled. The Maven 2 code path did it on
-// the LAST module instead, which was correct. Assert this once the generation is moved.
-if ( !pluginsDat.text.contains( 'modA.installed=1' ) )
-{
-    println "KNOWN BUG : plugins.dat lists no plugin, it is generated before the modules explode"
-}
+// modB declares db-pool-required, modA does not : the descriptors are really parsed, not
+// just listed by file name.
+assert dat.contains( 'modB.pool=portal' ) : "modB's pool was not declared :\n${dat}"
+assert !dat.contains( 'modA.pool' ) : "modA needs no pool and must not declare one :\n${dat}"
 
 // Third-party jars of every module are pooled in the shared WEB-INF/lib.
 List<String> jars = new File( shared, 'WEB-INF/lib' ).listFiles().collect { it.name }.sort()

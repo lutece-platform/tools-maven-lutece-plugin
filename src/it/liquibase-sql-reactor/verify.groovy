@@ -14,6 +14,14 @@ assert create.isFile() && update.isFile() : "the SQL sources are gone"
     assert lines[2].startsWith( '-- preconditions' ) : "missing preconditions in ${sql.name}"
 }
 
+// A pre-execution script is written by hand, already tagged : the goal leaves it as is and does not
+// report it as misnamed, plugin-liquibase runs it.
+File prerun = new File( sqlRoot, 'plugin/prerun_db_plug.sql' )
+assert prerun.readLines()[1] == '-- changeset plug:prerun_db_plug.sql' : "the pre-execution script was rewritten :\n${prerun.text}"
+assert prerun.text.count( 'liquibase formatted sql' ) == 1 : "the pre-execution script was tagged twice :\n${prerun.text}"
+String log = new File( basedir, 'build.log' ).text
+assert !log.contains( 'prerun_db_plug.sql does not follow' ) : "the pre-execution script was reported as misnamed"
+
 // Nothing must have been written at the reactor root.
 assert !new File( basedir, 'src' ).exists() : "the goal wrote outside the module"
 

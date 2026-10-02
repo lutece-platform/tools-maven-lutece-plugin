@@ -86,4 +86,24 @@ class LiquiBaseSqlMojoTest
                 new File( strBasePath + "/plugins/myplugin/plugin/data_myplugin.sql" ), strBasePath ),
                 "a plugin file outside upgrade/ must not be flagged" );
     }
+
+    @Test
+    @DisplayName( "a reserved pre-execution script is managed by Liquibase, a plain SQL file next to it is not" )
+    void prerunScriptIsManaged( )
+    {
+        String strBasePath = File.separator + "build" + File.separator + "WEB-INF" + File.separator + "sql";
+
+        assertTrue( LiquiBaseSqlMojo.isFileManagedByLiquibase(
+                new File( strBasePath + "/plugins/myplugin/plugin/prerun_db_myplugin.sql" ), strBasePath ),
+                "the prerun script of a plugin must reach WEB-INF/classes/sql" );
+        assertTrue( LiquiBaseSqlMojo.isFileManagedByLiquibase(
+                new File( strBasePath + "/plugins/myplugin/modules/mymodule/plugin/prerun_db_myplugin-mymodule.sql" ), strBasePath ),
+                "the prerun script of a module must reach WEB-INF/classes/sql" );
+        assertTrue( LiquiBaseSqlMojo.isFileManagedByLiquibase(
+                new File( strBasePath + "/plugins/myplugin/prerun_db_other.sql" ), strBasePath ),
+                "a misplaced prerun script is copied too: plugin-liquibase reports it at startup" );
+        assertFalse( LiquiBaseSqlMojo.isFileManagedByLiquibase(
+                new File( strBasePath + "/plugins/myplugin/plugin/data_myplugin.sql" ), strBasePath ),
+                "a file SqlPathInfo does not recognize stays out" );
+    }
 }

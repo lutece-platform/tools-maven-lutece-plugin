@@ -13,6 +13,8 @@ assert !new File( classesSql, 'upgrade/update_db_single-1.0.x-2.0.0.sql' ).exist
         "a script named after no convention must not be shipped"
 assert !new File( classesSql, 'plugin/data_single.sql' ).exists() :
         "a file outside Liquibase's naming scheme must not be shipped"
+assert new File( classesSql, 'plugin/prerun_db_single.sql' ).isFile() :
+        "the pre-execution script must be shipped : plugin-liquibase reads it from the classpath"
 
 String log = new File( basedir, 'build.log' ).text
 
@@ -25,6 +27,7 @@ assert log.contains( 'do not follow the Lutece SQL naming convention' ) :
 
 // data_single.sql is outside upgrade/ : excluding it is normal, it must not be reported.
 assert !log.contains( 'data_single.sql' ) : "a legitimate exclusion was reported as a fault"
+assert !log.contains( 'prerun_db_single.sql' ) : "the pre-execution script was reported as a fault"
 
 // Those exclusions must not flip the Liquibase readiness flag.
 File mpConfig = new File( webapp, 'WEB-INF/classes/META-INF/microprofile-config.properties' )
@@ -32,5 +35,5 @@ assert mpConfig.isFile() : "microprofile-config.properties was not generated"
 assert mpConfig.text.contains( 'liquibase.readyToRun=true' ) :
         "readyToRun must stay true :\n${mpConfig.text}"
 
-println "exploded-webapp OK : create script shipped, misnamed upgrade reported, readyToRun untouched"
+println "exploded-webapp OK : create and pre-execution scripts shipped, misnamed upgrade reported, readyToRun untouched"
 return true

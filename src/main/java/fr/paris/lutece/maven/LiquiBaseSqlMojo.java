@@ -59,6 +59,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.w3c.dom.Document;
 
 import fr.paris.lutece.utils.sql.PluginVersion;
+import fr.paris.lutece.utils.sql.RunAfterOrdering;
 import fr.paris.lutece.utils.sql.SqlPathInfo;
 
 /**
@@ -334,6 +335,11 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         String strSqlPath = getSqlPathInfoPath(path);
         SqlPathInfo sqlPath = SqlPathInfo.parse(strSqlPath);
 
+        if (sqlPath == null && RunAfterOrdering.isPrerunScript(strSqlPath))
+        {
+            return;
+        }
+
         if (sqlPath == null)
         {
             getLog().warn("SQL file " + strSqlPath + " does not follow the Lutece SQL naming convention :"
@@ -419,11 +425,22 @@ public class LiquiBaseSqlMojo extends AbstractLuteceWebappMojo
         return matcher.find();
     }
 
-  public static boolean isFileManagedByLiquibase(File candidate,String strBasePath ) {
+    /**
+     * Tells whether plugin-liquibase runs an SQL file, which must then be copied to WEB-INF/classes/sql: a script
+     * {@link SqlPathInfo} recognizes, or a pre-execution script ({@link RunAfterOrdering#isPrerunScript(String)})
+     * wherever it sits.
+     *
+     * @param candidate
+     *            the SQL file
+     * @param strBasePath
+     *            the absolute path of the WEB-INF/sql directory
+     * @return true if plugin-liquibase runs the file
+     */
+    public static boolean isFileManagedByLiquibase(File candidate, String strBasePath)
+    {
+        String strPath = getAbsoluteSqlFilePath(candidate, strBasePath);
 
-    
-      return  SqlPathInfo.parse( getAbsoluteSqlFilePath(candidate, strBasePath)) !=null;
-      
+        return SqlPathInfo.parse(strPath) != null || RunAfterOrdering.isPrerunScript(strPath);
     }
 
 

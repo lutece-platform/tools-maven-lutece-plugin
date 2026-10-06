@@ -19,6 +19,12 @@
       <id>lutece</id>
       <url>https://dev.lutece.paris.fr/maven_repository</url>
     </repository>
+    <repository>
+      <id>luteceSnapshot</id>
+      <url>https://dev.lutece.paris.fr/snapshot_repository</url>
+      <releases><enabled>false</enabled></releases>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
   </repositories>
 
   <build>

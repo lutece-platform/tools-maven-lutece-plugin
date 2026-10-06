@@ -15,13 +15,19 @@
       <id>lutece</id>
       <url>https://dev.lutece.paris.fr/maven_repository</url>
     </repository>
+    <repository>
+      <id>luteceSnapshot</id>
+      <url>https://dev.lutece.paris.fr/snapshot_repository</url>
+      <releases><enabled>false</enabled></releases>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
   </repositories>
 
   <dependencies>
     <dependency>
       <groupId>fr.paris.lutece.tools</groupId>
       <artifactId>build-config</artifactId>
-      <version>3.0.1</version>
+      <version>3.0.3-SNAPSHOT</version>
       <!-- provided, exactly as lutece-global-pom declares it : the jar carries the ant
            scripts to unpack, it must not be shipped in WEB-INF/lib -->
       <scope>provided</scope>

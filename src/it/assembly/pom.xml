@@ -27,7 +27,7 @@
     <dependency>
       <groupId>fr.paris.lutece.tools</groupId>
       <artifactId>build-config</artifactId>
-      <version>3.0.3-SNAPSHOT</version>
+      <version>3.0.3</version>
       <scope>provided</scope>
     </dependency>
     <!-- commons-configuration2 drags commons-text, itself dragging commons-lang3 :
